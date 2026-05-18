@@ -1,191 +1,286 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-    />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      #map {
-        width: 100vw;
-        height: 100vh;
-      }
-      .locate-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 1000;
-        background: white;
-        border: none;
-        padding: 8px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: bold;
-        cursor: pointer;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-      }
-      .legend {
-        position: absolute;
-        bottom: 30px;
-        left: 10px;
-        z-index: 1000;
-        background: white;
-        padding: 10px 14px;
-        border-radius: 8px;
-        font-size: 12px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        line-height: 1.8;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="map"></div>
-    <button class="locate-btn" onclick="locateMe()">
-      📍 Use My Current Location
-    </button>
-    <div class="legend">
-      <b>Alert Types</b><br />
-      🟣 Seizure<br />
-      🟠 Fall<br />
-      🔴 Panic
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; }
+    #map { width: 100vw; height: 100vh; }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      gap: 6px;
+      background: white;
+      padding: 6px 10px;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .filter-btn {
+      border: none;
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: opacity 0.2s;
+    }
+    .filter-btn.active { opacity: 1; }
+    .btn-all      { background: #1e293b; color: white; }
+    .btn-seizure  { background: #a855f7; color: white; }
+    .btn-fall     { background: #f97316; color: white; }
+    .btn-panic    { background: #ef4444; color: white; }
+    .btn-heatmap  { background: #0ea5e9; color: white; }
+
+    /* ── LOCATE BUTTON ── */
+    .locate-btn {
+      position: absolute;
+      top: 56px; right: 10px;
+      z-index: 1000;
+      background: white;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* ── PATTERN SUMMARY PANEL ── */
+    .summary-panel {
+      position: absolute;
+      bottom: 20px; left: 10px; right: 10px;
+      z-index: 1000;
+      background: white;
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-size: 12px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .summary-panel h4 {
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 7px 10px;
+    }
+    .summary-card .label { color: #64748b; font-size: 11px; }
+    .summary-card .value { font-weight: bold; color: #1e293b; font-size: 13px; margin-top: 2px; }
+
+    /* ── LEGEND ── */
+    .legend {
+      position: absolute;
+      bottom: 190px; left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      line-height: 1.9;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <button class="filter-btn btn-all active"     onclick="setFilter('all')">All</button>
+    <button class="filter-btn btn-seizure"        onclick="setFilter('seizure')">🟣 Seizure</button>
+    <button class="filter-btn btn-fall"           onclick="setFilter('fall')">🟠 Fall</button>
+    <button class="filter-btn btn-panic"          onclick="setFilter('panic')">🔴 Panic</button>
+    <button class="filter-btn btn-heatmap"        onclick="toggleHeatmap()">🔥 Heatmap</button>
+  </div>
+
+  <button class="locate-btn" onclick="locateMe()">📍 My Location</button>
+
+  <!-- Legend -->
+  <div class="legend">
+    <b>Legend</b><br>
+    🟣 Seizure detected<br>
+    🟠 Fall detected<br>
+    🔴 Panic / SOS alert
+  </div>
+
+  <!-- Pattern Summary -->
+  <div class="summary-panel" id="summaryPanel">
+    <h4>📊 Location Patterns</h4>
+    <div class="summary-grid" id="summaryGrid">
+      <div class="summary-card"><div class="label">Total Alerts</div><div class="value" id="statTotal">—</div></div>
+      <div class="summary-card"><div class="label">Most Common</div><div class="value" id="statType">—</div></div>
+      <div class="summary-card"><div class="label">Seizures</div><div class="value" id="statSeizure">—</div></div>
+      <div class="summary-card"><div class="label">Falls</div><div class="value" id="statFall">—</div></div>
+      <div class="summary-card"><div class="label">Panic Alerts</div><div class="value" id="statPanic">—</div></div>
+      <div class="summary-card"><div class="label">Unacknowledged</div><div class="value" id="statUnack">—</div></div>
     </div>
+  </div>
 
-    <script>
-      // ── FIREBASE CONFIG ───────────────────────────────────────────────────
-      // PALITAN mo ang apiKey ng tama mula sa Firebase Console
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
-        authDomain: "capstone-2fedw8.firebaseapp.com",
-        projectId: "capstone-2fedw8",
-      };
+  <script>
+    // ── FIREBASE ──────────────────────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
+      authDomain: "capstone-2fedw8.firebaseapp.com",
+      projectId: "capstone-2fedw8",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+    // ── MAP ───────────────────────────────────────────────────────────────
+    const map = L.map('map').setView([14.7948, 120.9252], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 19
+    }).addTo(map);
 
-      // ── MAP INIT ──────────────────────────────────────────────────────────
-      const map = L.map("map").setView([14.7948, 120.9252], 14);
+    const markerCluster = L.markerClusterGroup();
+    map.addLayer(markerCluster);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap",
-        maxZoom: 19,
+    let heatLayer = null;
+    let allAlerts = [];
+    let currentFilter = 'all';
+    let heatmapOn = false;
+
+    // ── ICON ──────────────────────────────────────────────────────────────
+    function getIcon(type) {
+      const colors = { seizure: '#a855f7', fall: '#f97316', panic: '#ef4444' };
+      const color = colors[(type||'').toLowerCase()] || '#6b7280';
+      return L.divIcon({
+        className: '',
+        html: `<div style="width:26px;height:26px;background:${color};border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`,
+        iconSize: [26,26], iconAnchor: [13,26], popupAnchor: [0,-28]
+      });
+    }
+
+    // ── RENDER MARKERS ────────────────────────────────────────────────────
+    function renderMarkers() {
+      markerCluster.clearLayers();
+
+      const filtered = currentFilter === 'all'
+        ? allAlerts
+        : allAlerts.filter(a => (a.type||'').toLowerCase() === currentFilter);
+
+      filtered.forEach(function(a) {
+        if (!a.latitude || !a.longitude) return;
+        const marker = L.marker([a.latitude, a.longitude], { icon: getIcon(a.type) });
+
+        const statusColor = a.status === 'unacknowledged' ? '#ef4444' : '#22c55e';
+        const statusLabel = a.status === 'unacknowledged' ? '🔴 Unacknowledged' : '✅ Acknowledged';
+        const time = a.timestamp
+          ? new Date(a.timestamp.seconds * 1000).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })
+          : 'N/A';
+
+        marker.bindPopup(`
+          <div style="min-width:190px;font-family:Arial;font-size:13px;line-height:1.8;">
+            <b style="font-size:14px;">${a.title || 'Alert'}</b><br>
+            Type: <b>${a.type || ''}</b><br>
+            Wearer: ${a.wearerId || ''}<br>
+            Time: ${time}<br><br>
+            <span style="color:${statusColor};font-weight:bold;font-size:12px;">${statusLabel}</span>
+          </div>
+        `);
+        markerCluster.addLayer(marker);
+      });
+    }
+
+    // ── RENDER HEATMAP ────────────────────────────────────────────────────
+    function renderHeatmap() {
+      if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+      if (!heatmapOn) return;
+
+      const points = allAlerts
+        .filter(a => a.latitude && a.longitude)
+        .map(a => [a.latitude, a.longitude, 1]);
+
+      heatLayer = L.heatLayer(points, {
+        radius: 30, blur: 20, maxZoom: 17,
+        gradient: { 0.2: '#a855f7', 0.5: '#f97316', 1.0: '#ef4444' }
       }).addTo(map);
+    }
 
-      const markerCluster = L.markerClusterGroup();
-      map.addLayer(markerCluster);
+    // ── UPDATE STATS ──────────────────────────────────────────────────────
+    function updateStats(alerts) {
+      const total = alerts.length;
+      const seizure = alerts.filter(a => (a.type||'').toLowerCase() === 'seizure').length;
+      const fall = alerts.filter(a => (a.type||'').toLowerCase() === 'fall').length;
+      const panic = alerts.filter(a => (a.type||'').toLowerCase() === 'panic').length;
+      const unack = alerts.filter(a => a.status === 'unacknowledged').length;
 
-      // ── ICON per alert type ───────────────────────────────────────────────
-      function getIcon(type) {
-        const colors = {
-          seizure: "#a855f7",
-          fall: "#f97316",
-          panic: "#ef4444",
-        };
-        const color = colors[(type || "").toLowerCase()] || "#6b7280";
+      const counts = { seizure, fall, panic };
+      const mostCommon = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
 
-        return L.divIcon({
-          className: "",
-          html: `<div style="
-          width:28px; height:28px;
-          background:${color};
-          border-radius:50% 50% 50% 0;
-          transform:rotate(-45deg);
-          border:3px solid white;
-          box-shadow:0 2px 6px rgba(0,0,0,0.4);
-        "></div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 28],
-          popupAnchor: [0, -30],
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statType').textContent = mostCommon ? `${mostCommon[0]} (${mostCommon[1]})` : '—';
+      document.getElementById('statSeizure').textContent = seizure;
+      document.getElementById('statFall').textContent = fall;
+      document.getElementById('statPanic').textContent = panic;
+      document.getElementById('statUnack').textContent = unack;
+    }
+
+    // ── FILTER ────────────────────────────────────────────────────────────
+    function setFilter(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.btn-' + (type === 'all' ? 'all' : type)).classList.add('active');
+      renderMarkers();
+    }
+
+    // ── HEATMAP TOGGLE ────────────────────────────────────────────────────
+    function toggleHeatmap() {
+      heatmapOn = !heatmapOn;
+      document.querySelector('.btn-heatmap').classList.toggle('active', heatmapOn);
+      renderHeatmap();
+    }
+
+    // ── FIRESTORE LISTENER ────────────────────────────────────────────────
+    db.collection('alerts')
+      .onSnapshot(function(snapshot) {
+        allAlerts = [];
+        snapshot.forEach(doc => allAlerts.push(doc.data()));
+        renderMarkers();
+        renderHeatmap();
+        updateStats(allAlerts);
+
+        if (markerCluster.getLayers().length > 0) {
+          map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
+        }
+      });
+
+    // ── LOCATE ME ─────────────────────────────────────────────────────────
+    function locateMe() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+          L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+            radius: 8, color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.8
+          }).addTo(map).bindPopup('You are here').openPopup();
         });
       }
-
-      // ── FETCH ALERTS — real-time listener ────────────────────────────────
-      function loadAlertsFromFirestore() {
-        db.collection("alerts")
-          .where("status", "==", "unacknowledged")
-          .onSnapshot(function (snapshot) {
-            markerCluster.clearLayers();
-
-            snapshot.forEach(function (doc) {
-              const a = doc.data();
-              if (!a.latitude || !a.longitude) return;
-
-              const marker = L.marker([a.latitude, a.longitude], {
-                icon: getIcon(a.type),
-              });
-
-              const statusColor =
-                a.status === "unacknowledged" ? "#ef4444" : "#22c55e";
-              const statusLabel =
-                a.status === "unacknowledged"
-                  ? "🔴 Unacknowledged"
-                  : "✅ Acknowledged";
-
-              const time = a.timestamp
-                ? new Date(a.timestamp.seconds * 1000).toLocaleString("en-PH", {
-                    timeZone: "Asia/Manila",
-                  })
-                : "N/A";
-
-              marker.bindPopup(`
-              <div style="min-width:190px; font-family:Arial; font-size:13px; line-height:1.8;">
-                <b style="font-size:14px;">${a.title || "Alert"}</b><br>
-                Type: <b>${a.type || ""}</b><br>
-                Wearer: ${a.wearerId || ""}<br>
-                Time: ${time}<br><br>
-                <span style="color:${statusColor}; font-weight:bold; font-size:12px;">
-                  ${statusLabel}
-                </span>
-              </div>
-            `);
-
-              markerCluster.addLayer(marker);
-            });
-
-            if (markerCluster.getLayers().length > 0) {
-              map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
-            }
-          });
-      }
-
-      // ── LOCATE ME ─────────────────────────────────────────────────────────
-      function locateMe() {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(function (pos) {
-            map.setView([pos.coords.latitude, pos.coords.longitude], 15);
-            L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
-              radius: 8,
-              color: "#3b82f6",
-              fillColor: "#3b82f6",
-              fillOpacity: 0.8,
-            })
-              .addTo(map)
-              .bindPopup("You are here")
-              .openPopup();
-          });
-        }
-      }
-
-      // ── START ─────────────────────────────────────────────────────────────
-      loadAlertsFromFirestore();
-    </script>
-  </body>
+    }
+  </script>
+</body>
 </html>
