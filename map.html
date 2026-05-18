@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      #map {
+        width: 100vw;
+        height: 100vh;
+      }
+      .locate-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()">
+      📍 Use My Current Location
+    </button>
+
+    <script>
+      const map = L.map("map").setView([14.7948, 120.9252], 14);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap",
+        maxZoom: 19,
+      }).addTo(map);
+
+      const markerCluster = L.markerClusterGroup();
+      map.addLayer(markerCluster);
+
+      // Icon color per alert type
+      function getIcon(type) {
+        const colors = {
+          seizure: "#a855f7", // purple
+          fall: "#f97316", // orange
+          panic: "#ef4444", // red
+        };
+        const color = colors[type] || "#6b7280";
+
+        return L.divIcon({
+          className: "",
+          html: `<div style="
+          width:28px; height:28px;
+          background:${color};
+          border-radius:50% 50% 50% 0;
+          transform:rotate(-45deg);
+          border:3px solid white;
+          box-shadow:0 2px 6px rgba(0,0,0,0.4);
+        "></div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 28],
+          popupAnchor: [0, -30],
+        });
+      }
+
+      // Called from FlutterFlow via runJavaScript("loadMarkers('<json>')")
+      // JSON format: [{ lat, lng, title, type, status, wearerId, timestamp }]
+      function loadMarkers(markersJson) {
+        markerCluster.clearLayers();
+
+        const markers = JSON.parse(markersJson);
+
+        markers.forEach(function (m) {
+          const marker = L.marker([m.lat, m.lng], { icon: getIcon(m.type) });
+
+          const statusColor =
+            m.status === "unacknowledged" ? "#ef4444" : "#22c55e";
+          const statusLabel =
+            m.status === "unacknowledged"
+              ? "🔴 Unacknowledged"
+              : "✅ Acknowledged";
+
+          marker.bindPopup(`
+          <div style="min-width:190px; font-family:Arial; font-size:13px; line-height:1.6;">
+            <b style="font-size:14px;">${m.title}</b><br>
+            Type: <b>${m.type}</b><br>
+            Wearer: ${m.wearerId}<br>
+            Time: ${m.timestamp}<br><br>
+            <span style="
+              color:${statusColor};
+              font-weight:bold;
+              font-size:12px;
+            ">${statusLabel}</span>
+          </div>
+        `);
+
+          // Notify FlutterFlow when marker is clicked
+          marker.on("click", function () {
+            if (window.flutter_inappwebview) {
+              window.flutter_inappwebview.callHandler(
+                "onMarkerClick",
+                JSON.stringify(m),
+              );
+            }
+          });
+
+          markerCluster.addLayer(marker);
+        });
+
+        if (markers.length > 0) {
+          map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
+        }
+      }
+
+      // Called from FlutterFlow when user taps an alert in the list
+      function highlightMarker(lat, lng) {
+        map.setView([lat, lng], 16);
+        markerCluster.eachLayer(function (layer) {
+          const ll = layer.getLatLng();
+          if (
+            ll.lat.toFixed(5) === parseFloat(lat).toFixed(5) &&
+            ll.lng.toFixed(5) === parseFloat(lng).toFixed(5)
+          ) {
+            layer.openPopup();
+          }
+        });
+      }
+
+      // Current location button
+      function locateMe() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function (pos) {
+            map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+            L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+              radius: 8,
+              color: "#3b82f6",
+              fillColor: "#3b82f6",
+              fillOpacity: 0.8,
+            })
+              .addTo(map)
+              .bindPopup("You are here")
+              .openPopup();
+          });
+        }
+      }
+    </script>
+  </body>
+</html>
