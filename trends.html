@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        background: #f1f5f9;
+        padding: 16px;
+        color: #1e293b;
+      }
+
+      h2 {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+      .subtitle {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 16px;
+      }
+
+      /* ── STAT CARDS ── */
+      .cards-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+      .card .label {
+        font-size: 11px;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+      .card .value {
+        font-size: 26px;
+        font-weight: bold;
+      }
+      .card .sub {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+      .card.purple .value {
+        color: #a855f7;
+      }
+      .card.orange .value {
+        color: #f97316;
+      }
+      .card.red .value {
+        color: #ef4444;
+      }
+      .card.blue .value {
+        color: #3b82f6;
+      }
+      .card.green .value {
+        color: #22c55e;
+      }
+      .card.dark .value {
+        color: #1e293b;
+      }
+
+      /* ── FULL WIDTH CARD ── */
+      .card-full {
+        background: white;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        margin-bottom: 10px;
+      }
+      .card-full .label {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      /* ── BAR ── */
+      .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .bar-label {
+        width: 60px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+      .bar-track {
+        flex: 1;
+        background: #f1f5f9;
+        border-radius: 6px;
+        height: 18px;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 0.6s ease;
+        min-width: 4px;
+      }
+      .bar-count {
+        width: 30px;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: right;
+        color: #475569;
+      }
+
+      /* ── LOADING ── */
+      .loading {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 13px;
+        padding: 40px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>📊 Location Patterns</h2>
+    <p class="subtitle" id="lastUpdated">Loading data...</p>
+
+    <div id="content" style="display: none">
+      <!-- Row 1: Total + Most Common -->
+      <div class="cards-grid">
+        <div class="card dark">
+          <div class="label">Total Alerts</div>
+          <div class="value" id="statTotal">—</div>
+          <div class="sub">All time</div>
+        </div>
+        <div class="card red">
+          <div class="label">Most Common</div>
+          <div class="value" id="statMost">—</div>
+          <div class="sub" id="statMostCount">—</div>
+        </div>
+      </div>
+
+      <!-- Row 2: Unacknowledged + Acknowledged -->
+      <div class="cards-grid">
+        <div class="card red">
+          <div class="label">🔴 Unacknowledged</div>
+          <div class="value" id="statUnack">—</div>
+          <div class="sub">Needs attention</div>
+        </div>
+        <div class="card green">
+          <div class="label">✅ Acknowledged</div>
+          <div class="value" id="statAck">—</div>
+          <div class="sub">Responded</div>
+        </div>
+      </div>
+
+      <!-- Alert Type Breakdown -->
+      <div class="card-full">
+        <div class="label">Alert Type Breakdown</div>
+
+        <div class="bar-row">
+          <div class="bar-label">🟣 Seizure</div>
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              id="barSeizure"
+              style="background: #a855f7; width: 0%"
+            ></div>
+          </div>
+          <div class="bar-count" id="countSeizure">0</div>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">🟠 Fall</div>
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              id="barFall"
+              style="background: #f97316; width: 0%"
+            ></div>
+          </div>
+          <div class="bar-count" id="countFall">0</div>
+        </div>
+
+        <div class="bar-row">
+          <div class="bar-label">🔴 Panic</div>
+          <div class="bar-track">
+            <div
+              class="bar-fill"
+              id="barPanic"
+              style="background: #ef4444; width: 0%"
+            ></div>
+          </div>
+          <div class="bar-count" id="countPanic">0</div>
+        </div>
+      </div>
+
+      <!-- Row 3: Wearers -->
+      <div class="card-full">
+        <div class="label">Active Wearers</div>
+        <div id="wearerList"></div>
+      </div>
+    </div>
+
+    <div class="loading" id="loadingMsg">Loading alert data...</div>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
+        authDomain: "capstone-2fedw8.firebaseapp.com",
+        projectId: "capstone-2fedw8",
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      db.collection("alerts").onSnapshot(function (snapshot) {
+        const alerts = [];
+        snapshot.forEach((doc) => alerts.push(doc.data()));
+
+        const total = alerts.length;
+        const seizure = alerts.filter(
+          (a) => (a.type || "").toLowerCase() === "seizure",
+        ).length;
+        const fall = alerts.filter(
+          (a) => (a.type || "").toLowerCase() === "fall",
+        ).length;
+        const panic = alerts.filter(
+          (a) => (a.type || "").toLowerCase() === "panic",
+        ).length;
+        const unack = alerts.filter(
+          (a) => a.status === "unacknowledged",
+        ).length;
+        const ack = alerts.filter((a) => a.status === "acknowledged").length;
+
+        // Most common type
+        const types = { Seizure: seizure, Fall: fall, Panic: panic };
+        const most = Object.entries(types).sort((a, b) => b[1] - a[1])[0];
+
+        // Update stats
+        document.getElementById("statTotal").textContent = total;
+        document.getElementById("statMost").textContent = most[0];
+        document.getElementById("statMostCount").textContent =
+          `${most[1]} alerts`;
+        document.getElementById("statUnack").textContent = unack;
+        document.getElementById("statAck").textContent = ack;
+
+        // Bars
+        const max = Math.max(seizure, fall, panic, 1);
+        document.getElementById("barSeizure").style.width =
+          (seizure / max) * 100 + "%";
+        document.getElementById("barFall").style.width =
+          (fall / max) * 100 + "%";
+        document.getElementById("barPanic").style.width =
+          (panic / max) * 100 + "%";
+        document.getElementById("countSeizure").textContent = seizure;
+        document.getElementById("countFall").textContent = fall;
+        document.getElementById("countPanic").textContent = panic;
+
+        // Wearers
+        const wearerMap = {};
+        alerts.forEach((a) => {
+          const w = a.wearerId || "Unknown";
+          wearerMap[w] = (wearerMap[w] || 0) + 1;
+        });
+        const wearerHtml = Object.entries(wearerMap)
+          .sort((a, b) => b[1] - a[1])
+          .map(
+            ([w, count]) => `
+          <div style="display:flex; justify-content:space-between; align-items:center;
+            padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:13px;">
+            <span>👤 ${w}</span>
+            <span style="font-weight:bold; color:#1e293b;">${count} alerts</span>
+          </div>
+        `,
+          )
+          .join("");
+        document.getElementById("wearerList").innerHTML = wearerHtml;
+
+        // Last updated
+        document.getElementById("lastUpdated").textContent =
+          "Last updated: " +
+          new Date().toLocaleTimeString("en-PH", { timeZone: "Asia/Manila" });
+
+        // Show content
+        document.getElementById("loadingMsg").style.display = "none";
+        document.getElementById("content").style.display = "block";
+      });
+    </script>
+  </body>
+</html>
