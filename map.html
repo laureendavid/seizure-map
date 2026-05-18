@@ -16,6 +16,9 @@
     />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
       * {
         margin: 0;
@@ -40,6 +43,18 @@
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
       }
+      .legend {
+        position: absolute;
+        bottom: 30px;
+        left: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        line-height: 1.8;
+      }
     </style>
   </head>
   <body>
@@ -47,8 +62,26 @@
     <button class="locate-btn" onclick="locateMe()">
       📍 Use My Current Location
     </button>
+    <div class="legend">
+      <b>Alert Types</b><br />
+      🟣 Seizure<br />
+      🟠 Fall<br />
+      🔴 Panic
+    </div>
 
     <script>
+      // ── FIREBASE CONFIG ───────────────────────────────────────────────────
+      // PALITAN mo ang apiKey ng tama mula sa Firebase Console
+      const firebaseConfig = {
+        apiKey: "REPLACE_WITH_YOUR_API_KEY",
+        authDomain: "capstone-2fedw8.firebaseapp.com",
+        projectId: "capstone-2fedw8",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      // ── MAP INIT ──────────────────────────────────────────────────────────
       const map = L.map("map").setView([14.7948, 120.9252], 14);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -59,14 +92,14 @@
       const markerCluster = L.markerClusterGroup();
       map.addLayer(markerCluster);
 
-      // Icon color per alert type
+      // ── ICON per alert type ───────────────────────────────────────────────
       function getIcon(type) {
         const colors = {
-          seizure: "#a855f7", // purple
-          fall: "#f97316", // orange
-          panic: "#ef4444", // red
+          seizure: "#a855f7",
+          fall: "#f97316",
+          panic: "#ef4444",
         };
-        const color = colors[type] || "#6b7280";
+        const color = colors[(type || "").toLowerCase()] || "#6b7280";
 
         return L.divIcon({
           className: "",
@@ -84,70 +117,56 @@
         });
       }
 
-      // Called from FlutterFlow via runJavaScript("loadMarkers('<json>')")
-      // JSON format: [{ lat, lng, title, type, status, wearerId, timestamp }]
-      function loadMarkers(markersJson) {
-        markerCluster.clearLayers();
+      // ── FETCH ALERTS — real-time listener ────────────────────────────────
+      function loadAlertsFromFirestore() {
+        db.collection("alerts")
+          .where("status", "==", "unacknowledged")
+          .onSnapshot(function (snapshot) {
+            markerCluster.clearLayers();
 
-        const markers = JSON.parse(markersJson);
+            snapshot.forEach(function (doc) {
+              const a = doc.data();
+              if (!a.latitude || !a.longitude) return;
 
-        markers.forEach(function (m) {
-          const marker = L.marker([m.lat, m.lng], { icon: getIcon(m.type) });
+              const marker = L.marker([a.latitude, a.longitude], {
+                icon: getIcon(a.type),
+              });
 
-          const statusColor =
-            m.status === "unacknowledged" ? "#ef4444" : "#22c55e";
-          const statusLabel =
-            m.status === "unacknowledged"
-              ? "🔴 Unacknowledged"
-              : "✅ Acknowledged";
+              const statusColor =
+                a.status === "unacknowledged" ? "#ef4444" : "#22c55e";
+              const statusLabel =
+                a.status === "unacknowledged"
+                  ? "🔴 Unacknowledged"
+                  : "✅ Acknowledged";
 
-          marker.bindPopup(`
-          <div style="min-width:190px; font-family:Arial; font-size:13px; line-height:1.6;">
-            <b style="font-size:14px;">${m.title}</b><br>
-            Type: <b>${m.type}</b><br>
-            Wearer: ${m.wearerId}<br>
-            Time: ${m.timestamp}<br><br>
-            <span style="
-              color:${statusColor};
-              font-weight:bold;
-              font-size:12px;
-            ">${statusLabel}</span>
-          </div>
-        `);
+              const time = a.timestamp
+                ? new Date(a.timestamp.seconds * 1000).toLocaleString("en-PH", {
+                    timeZone: "Asia/Manila",
+                  })
+                : "N/A";
 
-          // Notify FlutterFlow when marker is clicked
-          marker.on("click", function () {
-            if (window.flutter_inappwebview) {
-              window.flutter_inappwebview.callHandler(
-                "onMarkerClick",
-                JSON.stringify(m),
-              );
+              marker.bindPopup(`
+              <div style="min-width:190px; font-family:Arial; font-size:13px; line-height:1.8;">
+                <b style="font-size:14px;">${a.title || "Alert"}</b><br>
+                Type: <b>${a.type || ""}</b><br>
+                Wearer: ${a.wearerId || ""}<br>
+                Time: ${time}<br><br>
+                <span style="color:${statusColor}; font-weight:bold; font-size:12px;">
+                  ${statusLabel}
+                </span>
+              </div>
+            `);
+
+              markerCluster.addLayer(marker);
+            });
+
+            if (markerCluster.getLayers().length > 0) {
+              map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
             }
           });
-
-          markerCluster.addLayer(marker);
-        });
-
-        if (markers.length > 0) {
-          map.fitBounds(markerCluster.getBounds(), { padding: [40, 40] });
-        }
       }
 
-      // Called from FlutterFlow when user taps an alert in the list
-      function highlightMarker(lat, lng) {
-        map.setView([lat, lng], 16);
-        markerCluster.eachLayer(function (layer) {
-          const ll = layer.getLatLng();
-          if (
-            ll.lat.toFixed(5) === parseFloat(lat).toFixed(5) &&
-            ll.lng.toFixed(5) === parseFloat(lng).toFixed(5)
-          ) {
-            layer.openPopup();
-          }
-        });
-      }
-
-      // Current location button
+      // ── LOCATE ME ─────────────────────────────────────────────────────────
       function locateMe() {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function (pos) {
@@ -164,6 +183,9 @@
           });
         }
       }
+
+      // ── START ─────────────────────────────────────────────────────────────
+      loadAlertsFromFirestore();
     </script>
   </body>
 </html>
