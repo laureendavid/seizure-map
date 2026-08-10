@@ -40,6 +40,82 @@
         z-index: 1;
       }
 
+      /* ── TOP PANEL: date range + quick ranges ── */
+      .top-panel {
+        position: fixed;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        background: white;
+        padding: 10px 14px;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 92vw;
+      }
+
+      .quick-range-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .quick-btn {
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+        padding: 5px 12px;
+        border-radius: 14px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .quick-btn.active {
+        background: #1e293b;
+        color: white;
+        border-color: #1e293b;
+      }
+
+      .date-range-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .date-range-row label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: bold;
+      }
+      .date-range-row input[type="date"] {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 4px 6px;
+        font-size: 12px;
+        font-family: inherit;
+      }
+      .clear-dates-btn {
+        border: none;
+        background: #e2e8f0;
+        color: #334155;
+        padding: 5px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .date-summary {
+        text-align: center;
+        font-size: 11px;
+        color: #64748b;
+      }
+
       /* ── FILTER BUTTONS at the bottom ── */
       .filter-bar {
         position: fixed;
@@ -63,6 +139,7 @@
         cursor: pointer;
         opacity: 0.35;
         transition: all 0.2s;
+        position: relative;
       }
       .filter-btn.active {
         opacity: 1;
@@ -84,11 +161,16 @@
         background: #ef4444;
         color: white;
       }
+      .filter-count {
+        font-size: 10px;
+        opacity: 0.85;
+        margin-left: 3px;
+      }
 
       /* ── LOCATE button ── */
       .locate-btn {
         position: fixed;
-        top: 14px;
+        bottom: 24px;
         right: 14px;
         z-index: 1000;
         background: white;
@@ -115,6 +197,23 @@
         font-weight: bold;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
+
+      /* No results notice */
+      .empty-notice {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 999;
+        background: white;
+        padding: 14px 22px;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        font-size: 13px;
+        color: #64748b;
+        font-weight: bold;
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -123,22 +222,43 @@
     <!-- Alert count -->
     <div class="alert-badge" id="alertBadge">Loading...</div>
 
+    <!-- Top panel: quick ranges + custom date range -->
+    <div class="top-panel">
+      <div class="quick-range-row" id="quickRangeRow">
+        <button class="quick-btn active" data-range="all" onclick="setQuickRange('all')">All Time</button>
+        <button class="quick-btn" data-range="today" onclick="setQuickRange('today')">Today</button>
+        <button class="quick-btn" data-range="7" onclick="setQuickRange('7')">Last 7 Days</button>
+        <button class="quick-btn" data-range="30" onclick="setQuickRange('30')">Last 30 Days</button>
+      </div>
+      <div class="date-range-row">
+        <label>From</label>
+        <input type="date" id="dateFrom" onchange="onCustomDateChange()" />
+        <label>To</label>
+        <input type="date" id="dateTo" onchange="onCustomDateChange()" />
+        <button class="clear-dates-btn" onclick="clearDates()">Clear</button>
+      </div>
+      <div class="date-summary" id="dateSummary">Showing all dates</div>
+    </div>
+
     <!-- Locate button -->
     <button class="locate-btn" onclick="locateMe()">📍 My Location</button>
 
+    <!-- No results -->
+    <div class="empty-notice" id="emptyNotice">No alerts match this filter</div>
+
     <!-- Filter buttons at bottom -->
     <div class="filter-bar">
-      <button class="filter-btn btn-all active" onclick="setFilter('all')">
-        All
+      <button class="filter-btn btn-all active" onclick="setTypeFilter('all')">
+        All<span class="filter-count" id="count-all"></span>
       </button>
-      <button class="filter-btn btn-seizure" onclick="setFilter('seizure')">
-        🟣 Seizure
+      <button class="filter-btn btn-seizure" onclick="setTypeFilter('seizure')">
+        🟣 Seizure<span class="filter-count" id="count-seizure"></span>
       </button>
-      <button class="filter-btn btn-fall" onclick="setFilter('fall')">
-        🟠 Fall
+      <button class="filter-btn btn-fall" onclick="setTypeFilter('fall')">
+        🟠 Fall<span class="filter-count" id="count-fall"></span>
       </button>
-      <button class="filter-btn btn-panic" onclick="setFilter('panic')">
-        🔴 Panic
+      <button class="filter-btn btn-panic" onclick="setTypeFilter('panic')">
+        🔴 Panic<span class="filter-count" id="count-panic"></span>
       </button>
     </div>
 
@@ -166,7 +286,11 @@
       map.addLayer(markerCluster);
 
       let allAlerts = [];
-      let currentFilter = "all";
+      let currentTypeFilter = "all";
+      let currentQuickRange = "all";
+      let customFrom = null; // Date object, start of day
+      let customTo = null; // Date object, end of day
+      let hasFittedOnce = false;
 
       // ── ICON ──────────────────────────────────────────────────────────────
       function getIcon(type) {
@@ -192,23 +316,117 @@
         });
       }
 
+      // ── DATE HELPERS ─────────────────────────────────────────────────────
+      function toJsDate(alert) {
+        if (!alert.timestamp || !alert.timestamp.seconds) return null;
+        return new Date(alert.timestamp.seconds * 1000);
+      }
+
+      function startOfDay(d) {
+        const x = new Date(d);
+        x.setHours(0, 0, 0, 0);
+        return x;
+      }
+      function endOfDay(d) {
+        const x = new Date(d);
+        x.setHours(23, 59, 59, 999);
+        return x;
+      }
+
+      function formatDateShort(d) {
+        return d.toLocaleDateString("en-PH", {
+          timeZone: "Asia/Manila",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      // Applies the active date range (quick or custom) and returns [from, to] as Date|null
+      function getActiveDateRange() {
+        if (customFrom || customTo) {
+          return [customFrom, customTo];
+        }
+        const now = new Date();
+        if (currentQuickRange === "today") {
+          return [startOfDay(now), endOfDay(now)];
+        }
+        if (currentQuickRange === "7") {
+          const from = new Date(now);
+          from.setDate(from.getDate() - 6);
+          return [startOfDay(from), endOfDay(now)];
+        }
+        if (currentQuickRange === "30") {
+          const from = new Date(now);
+          from.setDate(from.getDate() - 29);
+          return [startOfDay(from), endOfDay(now)];
+        }
+        return [null, null]; // all time
+      }
+
+      // ── FILTER (type + date combined) ───────────────────────────────────
+      function getFilteredAlerts() {
+        const [from, to] = getActiveDateRange();
+
+        return allAlerts.filter((a) => {
+          // type filter
+          if (
+            currentTypeFilter !== "all" &&
+            (a.type || "").toLowerCase() !== currentTypeFilter
+          ) {
+            return false;
+          }
+          // date filter
+          if (from || to) {
+            const d = toJsDate(a);
+            if (!d) return false; // undated alerts excluded when a date range is active
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+          }
+          return true;
+        });
+      }
+
       // ── RENDER ────────────────────────────────────────────────────────────
-      function renderMarkers() {
+      function renderMarkers(fitView) {
         markerCluster.clearLayers();
 
-        const filtered =
-          currentFilter === "all"
-            ? allAlerts
-            : allAlerts.filter(
-                (a) => (a.type || "").toLowerCase() === currentFilter,
-              );
+        const filtered = getFilteredAlerts();
 
-        // Update badge
+        // Update badge (unacknowledged count within current filter)
         const unack = filtered.filter(
           (a) => a.status === "unacknowledged",
         ).length;
         document.getElementById("alertBadge").textContent =
           unack > 0 ? `🔴 ${unack} Unacknowledged` : `✅ All Acknowledged`;
+
+        // Update per-type counts (respect current date range, ignore type filter itself)
+        const [from, to] = getActiveDateRange();
+        const dateOnly = allAlerts.filter((a) => {
+          if (!from && !to) return true;
+          const d = toJsDate(a);
+          if (!d) return false;
+          if (from && d < from) return false;
+          if (to && d > to) return false;
+          return true;
+        });
+        const counts = { all: dateOnly.length, seizure: 0, fall: 0, panic: 0 };
+        dateOnly.forEach((a) => {
+          const t = (a.type || "").toLowerCase();
+          if (counts[t] !== undefined) counts[t]++;
+        });
+        Object.keys(counts).forEach((k) => {
+          const el = document.getElementById("count-" + k);
+          if (el) el.textContent = ` (${counts[k]})`;
+        });
+
+        // Sort by most recent first for popup consistency (not strictly required for markers)
+        filtered.sort((a, b) => {
+          const da = toJsDate(a);
+          const db = toJsDate(b);
+          if (!da || !db) return 0;
+          return db - da;
+        });
 
         filtered.forEach(function (a) {
           if (!a.latitude || !a.longitude) return;
@@ -218,18 +436,22 @@
           });
 
           const isUnack = a.status === "unacknowledged";
-          const time = a.timestamp
-            ? new Date(a.timestamp.seconds * 1000).toLocaleString("en-PH", {
+          const d = toJsDate(a);
+          const dateStr = d ? formatDateShort(d) : "N/A";
+          const timeStr = d
+            ? d.toLocaleTimeString("en-PH", {
                 timeZone: "Asia/Manila",
+                hour: "2-digit",
+                minute: "2-digit",
               })
-            : "N/A";
+            : "";
 
           marker.bindPopup(`
           <div style="font-family:Arial; font-size:14px; line-height:2; min-width:200px;">
             <b style="font-size:15px;">${a.title || "Alert"}</b><br>
             <span>📌 Type: <b>${(a.type || "").toUpperCase()}</b></span><br>
             <span>👤 Wearer: ${a.wearerId || "Unknown"}</span><br>
-            <span>🕐 ${time}</span><br><br>
+            <span>📅 ${dateStr} &nbsp; 🕐 ${timeStr}</span><br><br>
             <span style="
               display:inline-block;
               background:${isUnack ? "#fee2e2" : "#dcfce7"};
@@ -243,14 +465,35 @@
           markerCluster.addLayer(marker);
         });
 
-        if (markerCluster.getLayers().length > 0) {
-          map.fitBounds(markerCluster.getBounds(), { padding: [60, 60] });
+        // Empty state
+        document.getElementById("emptyNotice").style.display =
+          filtered.length === 0 ? "block" : "none";
+
+        // Only auto-fit bounds on first load or when the user actively changes a filter,
+        // not on every realtime Firestore update (so the map doesn't jump around).
+        if (fitView && markerCluster.getLayers().length > 0) {
+          map.fitBounds(markerCluster.getBounds(), { padding: [70, 90] });
         }
       }
 
-      // ── FILTER ────────────────────────────────────────────────────────────
-      function setFilter(type) {
-        currentFilter = type;
+      // ── DATE SUMMARY TEXT ────────────────────────────────────────────────
+      function updateDateSummary() {
+        const [from, to] = getActiveDateRange();
+        const summaryEl = document.getElementById("dateSummary");
+        if (!from && !to) {
+          summaryEl.textContent = "Showing all dates";
+        } else if (from && to) {
+          summaryEl.textContent = `Showing ${formatDateShort(from)} – ${formatDateShort(to)}`;
+        } else if (from) {
+          summaryEl.textContent = `Showing from ${formatDateShort(from)}`;
+        } else {
+          summaryEl.textContent = `Showing up to ${formatDateShort(to)}`;
+        }
+      }
+
+      // ── TYPE FILTER ───────────────────────────────────────────────────────
+      function setTypeFilter(type) {
+        currentTypeFilter = type;
         document
           .querySelectorAll(".filter-btn")
           .forEach((b) => b.classList.remove("active"));
@@ -261,15 +504,61 @@
           panic: "btn-panic",
         };
         document.querySelector("." + map2[type]).classList.add("active");
-        renderMarkers();
+        renderMarkers(true);
+      }
+
+      // ── QUICK DATE RANGE ─────────────────────────────────────────────────
+      function setQuickRange(range) {
+        currentQuickRange = range;
+        customFrom = null;
+        customTo = null;
+        document.getElementById("dateFrom").value = "";
+        document.getElementById("dateTo").value = "";
+        document
+          .querySelectorAll(".quick-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.querySelector(`[data-range="${range}"]`).classList.add("active");
+        updateDateSummary();
+        renderMarkers(true);
+      }
+
+      // ── CUSTOM DATE RANGE ────────────────────────────────────────────────
+      function onCustomDateChange() {
+        const fromVal = document.getElementById("dateFrom").value;
+        const toVal = document.getElementById("dateTo").value;
+        customFrom = fromVal ? startOfDay(new Date(fromVal + "T00:00:00")) : null;
+        customTo = toVal ? endOfDay(new Date(toVal + "T00:00:00")) : null;
+
+        // deactivate quick-range buttons since a custom range is now driving the filter
+        document
+          .querySelectorAll(".quick-btn")
+          .forEach((b) => b.classList.remove("active"));
+        if (!fromVal && !toVal) {
+          currentQuickRange = "all";
+          document.querySelector('[data-range="all"]').classList.add("active");
+        }
+
+        updateDateSummary();
+        renderMarkers(true);
+      }
+
+      function clearDates() {
+        document.getElementById("dateFrom").value = "";
+        document.getElementById("dateTo").value = "";
+        setQuickRange("all");
       }
 
       // ── FIRESTORE ─────────────────────────────────────────────────────────
       db.collection("alerts").onSnapshot(function (snapshot) {
         allAlerts = [];
         snapshot.forEach((doc) => allAlerts.push(doc.data()));
-        renderMarkers();
+        // Fit the map view only the very first time data loads, so incoming
+        // realtime alerts afterwards don't yank the map away from the user.
+        renderMarkers(!hasFittedOnce);
+        hasFittedOnce = true;
       });
+
+      updateDateSummary();
 
       // ── LOCATE ────────────────────────────────────────────────────────────
       function locateMe() {
