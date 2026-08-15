@@ -279,6 +279,32 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
+      /* ── CONNECTED WEARER INDICATOR ── */
+      .wearer-badge {
+        position: fixed;
+        top: 58px;
+        left: 14px;
+        z-index: 1000;
+        background: white;
+        color: #1e293b;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 11px;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 55vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: none;
+      }
+      .wearer-badge.show {
+        display: block;
+      }
+      .wearer-badge.error {
+        color: #dc2626;
+      }
+
       /* No results notice */
       .empty-notice {
         position: fixed;
@@ -304,6 +330,9 @@
 
     <!-- Alert count -->
     <div class="alert-badge" id="alertBadge">Loading...</div>
+
+    <!-- Connected wearer indicator -->
+    <div class="wearer-badge" id="wearerBadge"></div>
 
     <!-- Date filter toggle button (top-right) -->
     <button class="date-toggle-btn" id="dateToggleBtn" onclick="toggleDatePanel()">
@@ -675,16 +704,120 @@
         setQuickRange("all");
       }
 
-      // ── FIRESTORE ─────────────────────────────────────────────────────────
-      db.collection("alerts").onSnapshot(function (snapshot) {
-        allAlerts = [];
-        snapshot.forEach((doc) => allAlerts.push(doc.data()));
-        // Fit the map view only the very first time data loads, so incoming
-        // realtime alerts afterwards don't yank the map away from the user.
-        renderMarkers(!hasFittedOnce);
-        hasFittedOnce = true;
-      });
+      // ── URL PARAM HELPER ─────────────────────────────────────────────────
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
 
+      // ── WEARER BADGE ─────────────────────────────────────────────────────
+      function setWearerBadge(text, isError) {
+        const el = document.getElementById("wearerBadge");
+        el.textContent = text;
+        el.classList.add("show");
+        el.classList.toggle("error", !!isError);
+      }
+
+      // ── FIRESTORE: listen to alerts, filtered by wearerId(s) when available ──
+      let alertsUnsubscribe = null;
+
+      function listenToAlerts(wearerIds) {
+        if (alertsUnsubscribe) {
+          alertsUnsubscribe(); // stop any previous listener before starting a new one
+        }
+        let query = db.collection("alerts");
+        if (wearerIds) {
+          const idList = Array.isArray(wearerIds) ? wearerIds : [wearerIds];
+          if (idList.length === 1) {
+            query = query.where("wearerId", "==", idList[0]);
+          } else if (idList.length > 1) {
+            query = query.where("wearerId", "in", idList.slice(0, 10)); // Firestore 'in' supports max 10
+          }
+        }
+        alertsUnsubscribe = query.onSnapshot(
+          function (snapshot) {
+            allAlerts = [];
+            snapshot.forEach((doc) => allAlerts.push(doc.data()));
+            // Fit the map view only the very first time data loads, so incoming
+            // realtime alerts afterwards don't yank the map away from the user.
+            renderMarkers(!hasFittedOnce);
+            hasFittedOnce = true;
+          },
+          function (error) {
+            console.error("Alerts listener error:", error);
+            setWearerBadge("⚠️ Could not load alerts", true);
+          },
+        );
+      }
+
+      // ── RESOLVE LOGGED-IN CAREGIVER → CONNECTED WEARER(S) ────────────────
+      // Schema:
+      //   caregiver_connections: { caregiverUid, wearerId, status } — status must be "accepted"
+      //   wearers: { wearerId, wearerName } — used only for a friendly display name
+      async function initAlertsForCurrentUser() {
+        const uid = getQueryParam("uid");
+
+        if (!uid) {
+          // No uid passed in the URL (e.g. testing directly in a browser) —
+          // fall back to showing every alert, unfiltered.
+          listenToAlerts(null);
+          return;
+        }
+
+        try {
+          const connectionsSnap = await db
+            .collection("caregiver_connections")
+            .where("caregiverUid", "==", uid)
+            .where("status", "==", "accepted")
+            .get();
+
+          if (connectionsSnap.empty) {
+            setWearerBadge("⚠️ No accepted wearer connection found", true);
+            listenToAlerts(null);
+            return;
+          }
+
+          const wearerIds = [
+            ...new Set(
+              connectionsSnap.docs
+                .map((d) => d.data().wearerId)
+                .filter(Boolean),
+            ),
+          ];
+
+          if (wearerIds.length === 0) {
+            setWearerBadge("⚠️ No wearer linked to this account", true);
+            listenToAlerts(null);
+            return;
+          }
+
+          // Look up friendly wearer name(s) for the badge (falls back to raw id if not found)
+          let displayNames = wearerIds;
+          try {
+            const wearersSnap = await db
+              .collection("wearers")
+              .where("wearerId", "in", wearerIds.slice(0, 10)) // Firestore 'in' supports max 10
+              .get();
+            const nameMap = {};
+            wearersSnap.forEach((doc) => {
+              const w = doc.data();
+              nameMap[w.wearerId] = w.wearerName || w.wearerId;
+            });
+            displayNames = wearerIds.map((id) => nameMap[id] || id);
+          } catch (lookupErr) {
+            console.warn("Could not look up wearer names:", lookupErr);
+          }
+
+          setWearerBadge(`👤 Connected: ${displayNames.join(", ")}`, false);
+          listenToAlerts(wearerIds);
+        } catch (err) {
+          console.error("Failed to resolve caregiver → wearer:", err);
+          setWearerBadge("⚠️ Error loading connection", true);
+          listenToAlerts(null);
+        }
+      }
+
+      initAlertsForCurrentUser();
       updateDateSummary();
 
       // ── LOCATE ────────────────────────────────────────────────────────────
