@@ -40,34 +40,118 @@
         z-index: 1;
       }
 
-      /* ── TOP PANEL: date range + quick ranges ── */
-      .top-panel {
+      /* ── ALERT COUNT BADGE (top-left) ── */
+      .alert-badge {
         position: fixed;
         top: 14px;
-        left: 50%;
-        transform: translateX(-50%);
+        left: 14px;
         z-index: 1000;
+        background: #ef4444;
+        color: white;
+        padding: 7px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        max-width: 55vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ── DATE FILTER TOGGLE BUTTON (top-right) ── */
+      .date-toggle-btn {
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        z-index: 1001;
         background: white;
-        padding: 10px 14px;
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        border: none;
+        padding: 7px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #1e293b;
+        max-width: 42vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .date-toggle-btn.has-filter {
+        background: #1e293b;
+        color: white;
+      }
+
+      /* ── BACKDROP (shown when panel is open, tap to close) ── */
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.25);
+        z-index: 1002;
+        display: none;
+      }
+      .backdrop.open {
+        display: block;
+      }
+
+      /* ── DATE FILTER PANEL (dropdown, hidden by default) ── */
+      .date-panel {
+        position: fixed;
+        top: 58px;
+        right: 14px;
+        left: 14px;
+        z-index: 1003;
+        background: white;
+        padding: 14px;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+        display: none;
         flex-direction: column;
-        gap: 8px;
-        max-width: 92vw;
+        gap: 10px;
+        max-width: 360px;
+        margin-left: auto;
+      }
+      .date-panel.open {
+        display: flex;
+      }
+      .date-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .date-panel-title {
+        font-size: 13px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+      .close-panel-btn {
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
       }
 
       .quick-range-row {
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
-        justify-content: center;
       }
       .quick-btn {
         border: 1px solid #cbd5e1;
         background: #f8fafc;
         color: #334155;
-        padding: 5px 12px;
+        padding: 7px 12px;
         border-radius: 14px;
         font-size: 12px;
         font-weight: bold;
@@ -85,8 +169,14 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        justify-content: center;
         flex-wrap: wrap;
+      }
+      .date-range-row .field {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        flex: 1;
+        min-width: 120px;
       }
       .date-range-row label {
         font-size: 11px;
@@ -96,24 +186,27 @@
       .date-range-row input[type="date"] {
         border: 1px solid #cbd5e1;
         border-radius: 8px;
-        padding: 4px 6px;
+        padding: 6px;
         font-size: 12px;
         font-family: inherit;
+        width: 100%;
       }
       .clear-dates-btn {
         border: none;
         background: #e2e8f0;
         color: #334155;
-        padding: 5px 10px;
+        padding: 8px 12px;
         border-radius: 8px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: bold;
         cursor: pointer;
+        align-self: flex-start;
       }
       .date-summary {
-        text-align: center;
         font-size: 11px;
         color: #64748b;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 8px;
       }
 
       /* ── FILTER BUTTONS at the bottom ── */
@@ -129,17 +222,20 @@
         padding: 8px 12px;
         border-radius: 30px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        max-width: 94vw;
+        overflow-x: auto;
       }
       .filter-btn {
         border: none;
-        padding: 8px 16px;
+        padding: 8px 14px;
         border-radius: 20px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: bold;
         cursor: pointer;
         opacity: 0.35;
         transition: all 0.2s;
         position: relative;
+        white-space: nowrap;
       }
       .filter-btn.active {
         opacity: 1;
@@ -170,7 +266,7 @@
       /* ── LOCATE button ── */
       .locate-btn {
         position: fixed;
-        bottom: 24px;
+        bottom: 76px;
         right: 14px;
         z-index: 1000;
         background: white;
@@ -180,21 +276,6 @@
         font-size: 13px;
         font-weight: bold;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      }
-
-      /* ── ALERT COUNT BADGE ── */
-      .alert-badge {
-        position: fixed;
-        top: 14px;
-        left: 14px;
-        z-index: 1000;
-        background: #ef4444;
-        color: white;
-        padding: 7px 14px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: bold;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       }
 
@@ -213,6 +294,8 @@
         color: #64748b;
         font-weight: bold;
         display: none;
+        text-align: center;
+        max-width: 80vw;
       }
     </style>
   </head>
@@ -222,21 +305,37 @@
     <!-- Alert count -->
     <div class="alert-badge" id="alertBadge">Loading...</div>
 
-    <!-- Top panel: quick ranges + custom date range -->
-    <div class="top-panel">
-      <div class="quick-range-row" id="quickRangeRow">
+    <!-- Date filter toggle button (top-right) -->
+    <button class="date-toggle-btn" id="dateToggleBtn" onclick="toggleDatePanel()">
+      📅 <span id="dateToggleLabel">All Time</span>
+    </button>
+
+    <!-- Backdrop for closing panel on outside tap -->
+    <div class="backdrop" id="backdrop" onclick="closeDatePanel()"></div>
+
+    <!-- Date filter panel (hidden until toggled) -->
+    <div class="date-panel" id="datePanel">
+      <div class="date-panel-header">
+        <span class="date-panel-title">Filter by Date</span>
+        <button class="close-panel-btn" onclick="closeDatePanel()">✕</button>
+      </div>
+      <div class="quick-range-row">
         <button class="quick-btn active" data-range="all" onclick="setQuickRange('all')">All Time</button>
         <button class="quick-btn" data-range="today" onclick="setQuickRange('today')">Today</button>
         <button class="quick-btn" data-range="7" onclick="setQuickRange('7')">Last 7 Days</button>
         <button class="quick-btn" data-range="30" onclick="setQuickRange('30')">Last 30 Days</button>
       </div>
       <div class="date-range-row">
-        <label>From</label>
-        <input type="date" id="dateFrom" onchange="onCustomDateChange()" />
-        <label>To</label>
-        <input type="date" id="dateTo" onchange="onCustomDateChange()" />
-        <button class="clear-dates-btn" onclick="clearDates()">Clear</button>
+        <div class="field">
+          <label>From</label>
+          <input type="date" id="dateFrom" onchange="onCustomDateChange()" />
+        </div>
+        <div class="field">
+          <label>To</label>
+          <input type="date" id="dateTo" onchange="onCustomDateChange()" />
+        </div>
       </div>
+      <button class="clear-dates-btn" onclick="clearDates()">Clear dates</button>
       <div class="date-summary" id="dateSummary">Showing all dates</div>
     </div>
 
@@ -480,15 +579,43 @@
       function updateDateSummary() {
         const [from, to] = getActiveDateRange();
         const summaryEl = document.getElementById("dateSummary");
-        if (!from && !to) {
-          summaryEl.textContent = "Showing all dates";
-        } else if (from && to) {
-          summaryEl.textContent = `Showing ${formatDateShort(from)} – ${formatDateShort(to)}`;
+        const toggleLabel = document.getElementById("dateToggleLabel");
+        const toggleBtn = document.getElementById("dateToggleBtn");
+
+        let text = "Showing all dates";
+        let short = "All Time";
+        if (from && to) {
+          text = `Showing ${formatDateShort(from)} – ${formatDateShort(to)}`;
+          short = `${formatDateShort(from)} – ${formatDateShort(to)}`;
         } else if (from) {
-          summaryEl.textContent = `Showing from ${formatDateShort(from)}`;
-        } else {
-          summaryEl.textContent = `Showing up to ${formatDateShort(to)}`;
+          text = `Showing from ${formatDateShort(from)}`;
+          short = `From ${formatDateShort(from)}`;
+        } else if (to) {
+          text = `Showing up to ${formatDateShort(to)}`;
+          short = `Up to ${formatDateShort(to)}`;
         }
+
+        summaryEl.textContent = text;
+        toggleLabel.textContent = short;
+        toggleBtn.classList.toggle("has-filter", !(!from && !to));
+      }
+
+      // ── PANEL OPEN/CLOSE ─────────────────────────────────────────────────
+      function toggleDatePanel() {
+        const panel = document.getElementById("datePanel");
+        if (panel.classList.contains("open")) {
+          closeDatePanel();
+        } else {
+          openDatePanel();
+        }
+      }
+      function openDatePanel() {
+        document.getElementById("datePanel").classList.add("open");
+        document.getElementById("backdrop").classList.add("open");
+      }
+      function closeDatePanel() {
+        document.getElementById("datePanel").classList.remove("open");
+        document.getElementById("backdrop").classList.remove("open");
       }
 
       // ── TYPE FILTER ───────────────────────────────────────────────────────
