@@ -26,7 +26,20 @@
       .subtitle {
         font-size: 12px;
         color: #64748b;
+        margin-bottom: 6px;
+      }
+      .wearer-line {
+        font-size: 12px;
+        font-weight: bold;
+        color: #1e293b;
         margin-bottom: 16px;
+        display: none;
+      }
+      .wearer-line.show {
+        display: block;
+      }
+      .wearer-line.error {
+        color: #dc2626;
       }
 
       /* ── STAT CARDS ── */
@@ -131,11 +144,21 @@
         font-size: 13px;
         padding: 40px 0;
       }
+
+      /* ── EMPTY STATE ── */
+      .empty-state {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 13px;
+        padding: 30px 10px;
+        display: none;
+      }
     </style>
   </head>
   <body>
     <h2>📊 Location Patterns</h2>
     <p class="subtitle" id="lastUpdated">Loading data...</p>
+    <p class="wearer-line" id="wearerLine"></p>
 
     <div id="content" style="display: none">
       <!-- Row 1: Total + Most Common -->
@@ -214,6 +237,8 @@
       </div>
     </div>
 
+    <div class="empty-state" id="emptyState">No alerts found for this account yet.</div>
+
     <div class="loading" id="loadingMsg">Loading alert data...</div>
 
     <script>
@@ -225,11 +250,38 @@
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
 
-      db.collection("alerts").onSnapshot(function (snapshot) {
-        const alerts = [];
-        snapshot.forEach((doc) => alerts.push(doc.data()));
+      // ── friendly names for wearerId → wearerName, filled in during init ──
+      let wearerNameMap = {};
 
+      // ── URL PARAM HELPER ─────────────────────────────────────────────────
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      // ── WEARER LINE (status text under the title) ────────────────────────
+      function setWearerLine(text, isError) {
+        const el = document.getElementById("wearerLine");
+        el.textContent = text;
+        el.classList.add("show");
+        el.classList.toggle("error", !!isError);
+      }
+
+      // ── RENDER STATS ──────────────────────────────────────────────────────
+      function renderStats(alerts) {
         const total = alerts.length;
+
+        if (total === 0) {
+          document.getElementById("loadingMsg").style.display = "none";
+          document.getElementById("content").style.display = "none";
+          document.getElementById("emptyState").style.display = "block";
+          document.getElementById("lastUpdated").textContent =
+            "Last updated: " +
+            new Date().toLocaleTimeString("en-PH", { timeZone: "Asia/Manila" });
+          return;
+        }
+        document.getElementById("emptyState").style.display = "none";
+
         const seizure = alerts.filter(
           (a) => (a.type || "").toLowerCase() === "seizure",
         ).length;
@@ -268,7 +320,7 @@
         document.getElementById("countFall").textContent = fall;
         document.getElementById("countPanic").textContent = panic;
 
-        // Wearers
+        // Wearers (uses friendly name when available)
         const wearerMap = {};
         alerts.forEach((a) => {
           const w = a.wearerId || "Unknown";
@@ -280,7 +332,7 @@
             ([w, count]) => `
           <div style="display:flex; justify-content:space-between; align-items:center;
             padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:13px;">
-            <span>👤 ${w}</span>
+            <span>👤 ${wearerNameMap[w] || w}</span>
             <span style="font-weight:bold; color:#1e293b;">${count} alerts</span>
           </div>
         `,
@@ -296,7 +348,107 @@
         // Show content
         document.getElementById("loadingMsg").style.display = "none";
         document.getElementById("content").style.display = "block";
-      });
+      }
+
+      // ── FIRESTORE: listen to alerts, filtered by wearerId(s) when available ──
+      let alertsUnsubscribe = null;
+
+      function listenToAlerts(wearerIds) {
+        if (alertsUnsubscribe) {
+          alertsUnsubscribe(); // stop any previous listener before starting a new one
+        }
+        let query = db.collection("alerts");
+        if (wearerIds) {
+          const idList = Array.isArray(wearerIds) ? wearerIds : [wearerIds];
+          if (idList.length === 1) {
+            query = query.where("wearerId", "==", idList[0]);
+          } else if (idList.length > 1) {
+            query = query.where("wearerId", "in", idList.slice(0, 10)); // Firestore 'in' supports max 10
+          }
+        }
+        alertsUnsubscribe = query.onSnapshot(
+          function (snapshot) {
+            const alerts = [];
+            snapshot.forEach((doc) => alerts.push(doc.data()));
+            renderStats(alerts);
+          },
+          function (error) {
+            console.error("Alerts listener error:", error);
+            document.getElementById("loadingMsg").textContent =
+              "⚠️ Could not load alert data";
+          },
+        );
+      }
+
+      // ── RESOLVE LOGGED-IN CAREGIVER → CONNECTED WEARER(S) ────────────────
+      // Schema:
+      //   caregiver_connections: { caregiverUid, wearerId, status } — status must be "accepted"
+      //   wearers: { wearerId, wearerName } — used only for a friendly display name
+      async function initStatsForCurrentUser() {
+        const uid = getQueryParam("uid");
+
+        if (!uid) {
+          // No uid passed in the URL (e.g. testing directly in a browser) —
+          // fall back to showing stats for every alert, unfiltered.
+          listenToAlerts(null);
+          return;
+        }
+
+        try {
+          const connectionsSnap = await db
+            .collection("caregiver_connections")
+            .where("caregiverUid", "==", uid)
+            .where("status", "==", "accepted")
+            .get();
+
+          if (connectionsSnap.empty) {
+            setWearerLine("⚠️ No accepted wearer connection found", true);
+            listenToAlerts(null);
+            return;
+          }
+
+          const wearerIds = [
+            ...new Set(
+              connectionsSnap.docs
+                .map((d) => d.data().wearerId)
+                .filter(Boolean),
+            ),
+          ];
+
+          if (wearerIds.length === 0) {
+            setWearerLine("⚠️ No wearer linked to this account", true);
+            listenToAlerts(null);
+            return;
+          }
+
+          // Look up friendly wearer name(s) (falls back to raw id if not found)
+          let displayNames = wearerIds;
+          try {
+            const wearersSnap = await db
+              .collection("wearers")
+              .where("wearerId", "in", wearerIds.slice(0, 10)) // Firestore 'in' supports max 10
+              .get();
+            const nameMap = {};
+            wearersSnap.forEach((doc) => {
+              const w = doc.data();
+              nameMap[w.wearerId] = w.wearerName || w.wearerId;
+            });
+            displayNames = wearerIds.map((id) => nameMap[id] || id);
+            wearerNameMap = nameMap;
+          } catch (lookupErr) {
+            console.warn("Could not look up wearer names:", lookupErr);
+          }
+
+          setWearerLine(`👤 Showing data for: ${displayNames.join(", ")}`, false);
+          listenToAlerts(wearerIds);
+        } catch (err) {
+          console.error("Failed to resolve caregiver → wearer:", err);
+          setWearerLine("⚠️ Error loading connection", true);
+          listenToAlerts(null);
+        }
+      }
+
+      initStatsForCurrentUser();
     </script>
   </body>
 </html>
