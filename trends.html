@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
@@ -11,6 +15,7 @@
         padding: 0;
         box-sizing: border-box;
       }
+
       body {
         font-family: Arial, sans-serif;
         background: #f1f5f9;
@@ -18,77 +23,290 @@
         color: #1e293b;
       }
 
+      /* =========================================================
+         HEADER
+         ========================================================= */
+
+      .header-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 6px;
+      }
+
+      .title-group {
+        min-width: 0;
+      }
+
       h2 {
         font-size: 18px;
         font-weight: bold;
         margin-bottom: 4px;
       }
+
       .subtitle {
         font-size: 12px;
         color: #64748b;
-        margin-bottom: 6px;
       }
+
       .wearer-line {
         font-size: 12px;
         font-weight: bold;
         color: #1e293b;
-        margin-bottom: 16px;
+        margin-top: 7px;
+        margin-bottom: 14px;
         display: none;
       }
+
       .wearer-line.show {
         display: block;
       }
+
       .wearer-line.error {
         color: #dc2626;
       }
 
-      /* ── STAT CARDS ── */
+      /* =========================================================
+         DATE FILTER BUTTON
+         ========================================================= */
+
+      .date-toggle-btn {
+        flex-shrink: 0;
+        background: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #1e293b;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        max-width: 48%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .date-toggle-btn.has-filter {
+        background: #1e293b;
+        color: white;
+      }
+
+      /* =========================================================
+         DATE PANEL
+         ========================================================= */
+
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.25);
+        z-index: 1001;
+        display: none;
+      }
+
+      .backdrop.open {
+        display: block;
+      }
+
+      .date-panel {
+        position: fixed;
+        top: 16px;
+        right: 14px;
+        left: 14px;
+
+        z-index: 1002;
+
+        background: white;
+        padding: 14px;
+        border-radius: 16px;
+
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+
+        max-width: 360px;
+        margin-left: auto;
+      }
+
+      .date-panel.open {
+        display: flex;
+      }
+
+      .date-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .date-panel-title {
+        font-size: 13px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+
+      .close-panel-btn {
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+
+        width: 26px;
+        height: 26px;
+
+        border-radius: 50%;
+        font-size: 15px;
+        font-weight: bold;
+
+        cursor: pointer;
+      }
+
+      .quick-range-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .quick-btn {
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #334155;
+
+        padding: 7px 11px;
+        border-radius: 14px;
+
+        font-size: 11px;
+        font-weight: bold;
+
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .quick-btn.active {
+        background: #1e293b;
+        color: white;
+        border-color: #1e293b;
+      }
+
+      .date-range-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .date-range-row .field {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+
+        flex: 1;
+        min-width: 120px;
+      }
+
+      .date-range-row label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: bold;
+      }
+
+      .date-range-row input[type="date"] {
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 7px;
+
+        font-size: 12px;
+        font-family: inherit;
+
+        width: 100%;
+      }
+
+      .clear-dates-btn {
+        border: none;
+        background: #e2e8f0;
+        color: #334155;
+
+        padding: 8px 12px;
+        border-radius: 8px;
+
+        font-size: 12px;
+        font-weight: bold;
+
+        cursor: pointer;
+        align-self: flex-start;
+      }
+
+      .date-summary {
+        font-size: 11px;
+        color: #64748b;
+
+        border-top: 1px solid #f1f5f9;
+        padding-top: 8px;
+      }
+
+      /* =========================================================
+         STAT CARDS
+         ========================================================= */
+
       .cards-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
-        margin-bottom: 16px;
+        margin-bottom: 10px;
       }
+
       .card {
         background: white;
         border-radius: 12px;
         padding: 14px;
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
       }
+
       .card .label {
         font-size: 11px;
         color: #64748b;
         margin-bottom: 4px;
       }
+
       .card .value {
         font-size: 26px;
         font-weight: bold;
       }
+
       .card .sub {
         font-size: 11px;
         color: #94a3b8;
         margin-top: 2px;
       }
-      .card.purple .value {
-        color: #a855f7;
-      }
-      .card.orange .value {
-        color: #f97316;
-      }
-      .card.red .value {
-        color: #ef4444;
-      }
-      .card.blue .value {
-        color: #3b82f6;
-      }
-      .card.green .value {
-        color: #22c55e;
-      }
+
       .card.dark .value {
         color: #1e293b;
       }
 
-      /* ── FULL WIDTH CARD ── */
+      .card.red .value {
+        color: #ef4444;
+      }
+
+      .card.green .value {
+        color: #22c55e;
+      }
+
+      .card.orange .value {
+        color: #f97316;
+      }
+
+      .card.purple .value {
+        color: #a855f7;
+      }
+
+      /* Full-width card */
+
       .card-full {
         background: white;
         border-radius: 12px;
@@ -96,6 +314,7 @@
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
         margin-bottom: 10px;
       }
+
       .card-full .label {
         font-size: 12px;
         color: #64748b;
@@ -103,41 +322,183 @@
         font-weight: bold;
       }
 
-      /* ── BAR ── */
-      .bar-row {
+      .false-alarm-card {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
+        justify-content: space-between;
       }
-      .bar-label {
-        width: 60px;
+
+      .false-alarm-card .false-info .label {
+        margin-bottom: 4px;
+      }
+
+      .false-alarm-value {
+        font-size: 26px;
+        font-weight: bold;
+        color: #f97316;
+      }
+
+      .false-alarm-sub {
+        font-size: 11px;
+        color: #94a3b8;
+        margin-top: 2px;
+      }
+
+      /* =========================================================
+         DONUT SECTION
+         ========================================================= */
+
+      .distribution-layout {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+
+      .donut-wrapper {
+        flex: 0 0 170px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .donut {
+        width: 155px;
+        height: 155px;
+
+        border-radius: 50%;
+
+        background: conic-gradient(
+          #a855f7 0% 25%,
+          #f97316 25% 50%,
+          #ef4444 50% 75%,
+          #3b82f6 75% 100%
+        );
+
+        position: relative;
+
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+      }
+
+      .donut::after {
+        content: "";
+
+        position: absolute;
+        inset: 31px;
+
+        background: white;
+        border-radius: 50%;
+      }
+
+      .donut-center {
+        position: absolute;
+        z-index: 2;
+
+        width: 95px;
+        height: 95px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        flex-direction: column;
+
+        pointer-events: none;
+      }
+
+      .donut-total {
+        font-size: 23px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+
+      .donut-caption {
+        font-size: 10px;
+        color: #94a3b8;
+      }
+
+      .legend {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .legend-row {
+        display: flex;
+        align-items: center;
+
+        padding: 7px 0;
+
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .legend-row:last-child {
+        border-bottom: none;
+      }
+
+      .legend-dot {
+        width: 11px;
+        height: 11px;
+
+        border-radius: 50%;
+        flex-shrink: 0;
+
+        margin-right: 8px;
+      }
+
+      .legend-name {
+        flex: 1;
+
+        font-size: 12px;
+        font-weight: bold;
+        color: #334155;
+      }
+
+      .legend-value {
+        text-align: right;
+      }
+
+      .legend-count {
         font-size: 12px;
         font-weight: bold;
         color: #1e293b;
       }
-      .bar-track {
-        flex: 1;
-        background: #f1f5f9;
-        border-radius: 6px;
-        height: 18px;
-        overflow: hidden;
-      }
-      .bar-fill {
-        height: 100%;
-        border-radius: 6px;
-        transition: width 0.6s ease;
-        min-width: 4px;
-      }
-      .bar-count {
-        width: 30px;
-        font-size: 12px;
-        font-weight: bold;
-        text-align: right;
-        color: #475569;
+
+      .legend-percent {
+        display: block;
+        font-size: 10px;
+        color: #94a3b8;
+        margin-top: 1px;
       }
 
-      /* ── LOADING ── */
+      /* =========================================================
+         WEARER LIST
+         ========================================================= */
+
+      .wearer-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        padding: 8px 0;
+
+        border-bottom: 1px solid #f1f5f9;
+
+        font-size: 13px;
+      }
+
+      .wearer-item:last-child {
+        border-bottom: none;
+      }
+
+      .wearer-count {
+        font-weight: bold;
+        color: #1e293b;
+      }
+
+      /* =========================================================
+         STATES
+         ========================================================= */
+
       .loading {
         text-align: center;
         color: #94a3b8;
@@ -145,7 +506,6 @@
         padding: 40px 0;
       }
 
-      /* ── EMPTY STATE ── */
       .empty-state {
         text-align: center;
         color: #94a3b8;
@@ -153,300 +513,1749 @@
         padding: 30px 10px;
         display: none;
       }
+
+      /* =========================================================
+         MOBILE
+         ========================================================= */
+
+      @media (max-width: 600px) {
+        body {
+          padding: 12px;
+        }
+
+        .distribution-layout {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 14px;
+        }
+
+        .donut-wrapper {
+          flex-basis: auto;
+        }
+
+        .donut {
+          width: 145px;
+          height: 145px;
+        }
+
+        .donut::after {
+          inset: 29px;
+        }
+
+        .header-row {
+          align-items: center;
+        }
+
+        h2 {
+          font-size: 17px;
+        }
+
+        .date-toggle-btn {
+          font-size: 10px;
+          padding: 7px 10px;
+        }
+      }
     </style>
   </head>
-  <body>
-    <h2>📊 Location Patterns</h2>
-    <p class="subtitle" id="lastUpdated">Loading data...</p>
-    <p class="wearer-line" id="wearerLine"></p>
 
-    <div id="content" style="display: none">
-      <!-- Row 1: Total + Most Common -->
+  <body>
+    <!-- =======================================================
+         HEADER
+         ======================================================= -->
+
+    <div class="header-row">
+      <div class="title-group">
+        <h2>📊 Location Patterns</h2>
+
+        <p
+          class="subtitle"
+          id="lastUpdated"
+        >
+          Loading data...
+        </p>
+      </div>
+
+      <button
+        class="date-toggle-btn"
+        id="dateToggleBtn"
+        onclick="toggleDatePanel()"
+      >
+        📅
+        <span id="dateToggleLabel">
+          All Time
+        </span>
+      </button>
+    </div>
+
+    <p
+      class="wearer-line"
+      id="wearerLine"
+    ></p>
+
+    <!-- =======================================================
+         DATE FILTER
+         ======================================================= -->
+
+    <div
+      class="backdrop"
+      id="backdrop"
+      onclick="closeDatePanel()"
+    ></div>
+
+    <div
+      class="date-panel"
+      id="datePanel"
+    >
+      <div class="date-panel-header">
+        <span class="date-panel-title">
+          Filter by Date
+        </span>
+
+        <button
+          class="close-panel-btn"
+          onclick="closeDatePanel()"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="quick-range-row">
+        <button
+          class="quick-btn active"
+          data-range="all"
+          onclick="setQuickRange('all')"
+        >
+          All Time
+        </button>
+
+        <button
+          class="quick-btn"
+          data-range="today"
+          onclick="setQuickRange('today')"
+        >
+          Today
+        </button>
+
+        <button
+          class="quick-btn"
+          data-range="7"
+          onclick="setQuickRange('7')"
+        >
+          Last 7 Days
+        </button>
+
+        <button
+          class="quick-btn"
+          data-range="30"
+          onclick="setQuickRange('30')"
+        >
+          Last 30 Days
+        </button>
+      </div>
+
+      <div class="date-range-row">
+        <div class="field">
+          <label>
+            From
+          </label>
+
+          <input
+            type="date"
+            id="dateFrom"
+            onchange="onCustomDateChange()"
+          />
+        </div>
+
+        <div class="field">
+          <label>
+            To
+          </label>
+
+          <input
+            type="date"
+            id="dateTo"
+            onchange="onCustomDateChange()"
+          />
+        </div>
+      </div>
+
+      <button
+        class="clear-dates-btn"
+        onclick="clearDates()"
+      >
+        Clear dates
+      </button>
+
+      <div
+        class="date-summary"
+        id="dateSummary"
+      >
+        Showing all dates
+      </div>
+    </div>
+
+    <!-- =======================================================
+         CONTENT
+         ======================================================= -->
+
+    <div
+      id="content"
+      style="display: none"
+    >
+      <!-- TOTAL + MOST COMMON -->
+
       <div class="cards-grid">
         <div class="card dark">
-          <div class="label">Total Alerts</div>
-          <div class="value" id="statTotal">—</div>
-          <div class="sub">All time</div>
+          <div class="label">
+            Total Alerts
+          </div>
+
+          <div
+            class="value"
+            id="statTotal"
+          >
+            —
+          </div>
+
+          <div
+            class="sub"
+            id="statTotalSub"
+          >
+            All time
+          </div>
         </div>
+
         <div class="card red">
-          <div class="label">Most Common</div>
-          <div class="value" id="statMost">—</div>
-          <div class="sub" id="statMostCount">—</div>
+          <div class="label">
+            Most Common
+          </div>
+
+          <div
+            class="value"
+            id="statMost"
+          >
+            —
+          </div>
+
+          <div
+            class="sub"
+            id="statMostCount"
+          >
+            —
+          </div>
         </div>
       </div>
 
-      <!-- Row 2: Unacknowledged + Acknowledged -->
+      <!-- UNACK + ACK -->
+
       <div class="cards-grid">
         <div class="card red">
-          <div class="label">🔴 Unacknowledged</div>
-          <div class="value" id="statUnack">—</div>
-          <div class="sub">Needs attention</div>
+          <div class="label">
+            🔴 Unacknowledged
+          </div>
+
+          <div
+            class="value"
+            id="statUnack"
+          >
+            —
+          </div>
+
+          <div class="sub">
+            Needs attention
+          </div>
         </div>
+
         <div class="card green">
-          <div class="label">✅ Acknowledged</div>
-          <div class="value" id="statAck">—</div>
-          <div class="sub">Responded</div>
+          <div class="label">
+            ✅ Acknowledged
+          </div>
+
+          <div
+            class="value"
+            id="statAck"
+          >
+            —
+          </div>
+
+          <div class="sub">
+            Responded
+          </div>
         </div>
       </div>
 
-      <!-- Alert Type Breakdown -->
-      <div class="card-full">
-        <div class="label">Alert Type Breakdown</div>
+      <!-- FALSE ALARM -->
 
-        <div class="bar-row">
-          <div class="bar-label">🟣 Seizure</div>
-          <div class="bar-track">
-            <div
-              class="bar-fill"
-              id="barSeizure"
-              style="background: #a855f7; width: 0%"
-            ></div>
+      <div class="card-full false-alarm-card">
+        <div class="false-info">
+          <div class="label">
+            ⚠️ False Alarms
           </div>
-          <div class="bar-count" id="countSeizure">0</div>
+
+          <div
+            class="false-alarm-sub"
+          >
+            Alerts marked by the wearer as false alarms
+          </div>
         </div>
 
-        <div class="bar-row">
-          <div class="bar-label">🟠 Fall</div>
-          <div class="bar-track">
-            <div
-              class="bar-fill"
-              id="barFall"
-              style="background: #f97316; width: 0%"
-            ></div>
-          </div>
-          <div class="bar-count" id="countFall">0</div>
-        </div>
-
-        <div class="bar-row">
-          <div class="bar-label">🔴 Panic</div>
-          <div class="bar-track">
-            <div
-              class="bar-fill"
-              id="barPanic"
-              style="background: #ef4444; width: 0%"
-            ></div>
-          </div>
-          <div class="bar-count" id="countPanic">0</div>
+        <div
+          class="false-alarm-value"
+          id="statFalseAlarm"
+        >
+          0
         </div>
       </div>
 
-      <!-- Row 3: Wearers -->
+      <!-- ALERT DISTRIBUTION -->
+
       <div class="card-full">
-        <div class="label">Active Wearers</div>
+        <div class="label">
+          Alert Type Distribution
+        </div>
+
+        <div class="distribution-layout">
+          <div class="donut-wrapper">
+            <div
+              class="donut"
+              id="donutChart"
+            ></div>
+
+            <div class="donut-center">
+              <div
+                class="donut-total"
+                id="donutTotal"
+              >
+                0
+              </div>
+
+              <div class="donut-caption">
+                alerts
+              </div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <!-- SEIZURE -->
+
+            <div class="legend-row">
+              <span
+                class="legend-dot"
+                style="background:#a855f7"
+              ></span>
+
+              <span class="legend-name">
+                Seizure
+              </span>
+
+              <span class="legend-value">
+                <span
+                  class="legend-count"
+                  id="countSeizure"
+                >
+                  0
+                </span>
+
+                <span
+                  class="legend-percent"
+                  id="percentSeizure"
+                >
+                  0%
+                </span>
+              </span>
+            </div>
+
+            <!-- FALL -->
+
+            <div class="legend-row">
+              <span
+                class="legend-dot"
+                style="background:#f97316"
+              ></span>
+
+              <span class="legend-name">
+                Fall
+              </span>
+
+              <span class="legend-value">
+                <span
+                  class="legend-count"
+                  id="countFall"
+                >
+                  0
+                </span>
+
+                <span
+                  class="legend-percent"
+                  id="percentFall"
+                >
+                  0%
+                </span>
+              </span>
+            </div>
+
+            <!-- PANIC -->
+
+            <div class="legend-row">
+              <span
+                class="legend-dot"
+                style="background:#ef4444"
+              ></span>
+
+              <span class="legend-name">
+                Panic
+              </span>
+
+              <span class="legend-value">
+                <span
+                  class="legend-count"
+                  id="countPanic"
+                >
+                  0
+                </span>
+
+                <span
+                  class="legend-percent"
+                  id="percentPanic"
+                >
+                  0%
+                </span>
+              </span>
+            </div>
+
+            <!-- PHYSIOLOGICAL -->
+
+            <div class="legend-row">
+              <span
+                class="legend-dot"
+                style="background:#3b82f6"
+              ></span>
+
+              <span class="legend-name">
+                Physiological
+              </span>
+
+              <span class="legend-value">
+                <span
+                  class="legend-count"
+                  id="countPhysiological"
+                >
+                  0
+                </span>
+
+                <span
+                  class="legend-percent"
+                  id="percentPhysiological"
+                >
+                  0%
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WEARER LIST -->
+
+      <div class="card-full">
+        <div class="label">
+          Active Wearers
+        </div>
+
         <div id="wearerList"></div>
       </div>
     </div>
 
-    <div class="empty-state" id="emptyState">No alerts found for this account yet.</div>
+    <!-- EMPTY -->
 
-    <div class="loading" id="loadingMsg">Loading alert data...</div>
+    <div
+      class="empty-state"
+      id="emptyState"
+    >
+      No alerts found for the selected date range.
+    </div>
+
+    <!-- LOADING -->
+
+    <div
+      class="loading"
+      id="loadingMsg"
+    >
+      Loading alert data...
+    </div>
 
     <script>
-      const firebaseConfig = {
-        apiKey: "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
-        authDomain: "capstone-2fedw8.firebaseapp.com",
-        projectId: "capstone-2fedw8",
-      };
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+      // ============================================================
+      // FIREBASE
+      // ============================================================
 
-      // ── friendly names for wearerId → wearerName, filled in during init ──
+      const firebaseConfig = {
+        apiKey:
+          "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
+
+        authDomain:
+          "capstone-2fedw8.firebaseapp.com",
+
+        projectId:
+          "capstone-2fedw8",
+      };
+
+      firebase.initializeApp(
+        firebaseConfig,
+      );
+
+      const db =
+        firebase.firestore();
+
+      // ============================================================
+      // GLOBAL DATA
+      // ============================================================
+
+      let allAlerts = [];
+
       let wearerNameMap = {};
 
-      // ── URL PARAM HELPER ─────────────────────────────────────────────────
-      function getQueryParam(name) {
-        const params = new URLSearchParams(window.location.search);
-        return params.get(name);
+      let currentQuickRange =
+        "all";
+
+      let customFrom =
+        null;
+
+      let customTo =
+        null;
+
+      // ============================================================
+      // URL PARAM
+      // ============================================================
+
+      function getQueryParam(
+        name,
+      ) {
+        const params =
+          new URLSearchParams(
+            window.location.search,
+          );
+
+        return params.get(
+          name,
+        );
       }
 
-      // ── WEARER LINE (status text under the title) ────────────────────────
-      function setWearerLine(text, isError) {
-        const el = document.getElementById("wearerLine");
-        el.textContent = text;
-        el.classList.add("show");
-        el.classList.toggle("error", !!isError);
+      // ============================================================
+      // WEARER LINE
+      // ============================================================
+
+      function setWearerLine(
+        text,
+        isError,
+      ) {
+        const el =
+          document.getElementById(
+            "wearerLine",
+          );
+
+        el.textContent =
+          text;
+
+        el.classList.add(
+          "show",
+        );
+
+        el.classList.toggle(
+          "error",
+          !!isError,
+        );
       }
 
-      // ── RENDER STATS ──────────────────────────────────────────────────────
-      function renderStats(alerts) {
-        const total = alerts.length;
+      // ============================================================
+      // DATE HELPERS
+      // ============================================================
 
-        if (total === 0) {
-          document.getElementById("loadingMsg").style.display = "none";
-          document.getElementById("content").style.display = "none";
-          document.getElementById("emptyState").style.display = "block";
-          document.getElementById("lastUpdated").textContent =
-            "Last updated: " +
-            new Date().toLocaleTimeString("en-PH", { timeZone: "Asia/Manila" });
-          return;
+      function toJsDate(
+        alert,
+      ) {
+        if (
+          !alert.timestamp ||
+          !alert.timestamp.seconds
+        ) {
+          return null;
         }
-        document.getElementById("emptyState").style.display = "none";
 
-        const seizure = alerts.filter(
-          (a) => (a.type || "").toLowerCase() === "seizure",
-        ).length;
-        const fall = alerts.filter(
-          (a) => (a.type || "").toLowerCase() === "fall",
-        ).length;
-        const panic = alerts.filter(
-          (a) => (a.type || "").toLowerCase() === "panic",
-        ).length;
-        const unack = alerts.filter(
-          (a) => a.status === "unacknowledged",
-        ).length;
-        const ack = alerts.filter((a) => a.status === "acknowledged").length;
-
-        // Most common type
-        const types = { Seizure: seizure, Fall: fall, Panic: panic };
-        const most = Object.entries(types).sort((a, b) => b[1] - a[1])[0];
-
-        // Update stats
-        document.getElementById("statTotal").textContent = total;
-        document.getElementById("statMost").textContent = most[0];
-        document.getElementById("statMostCount").textContent =
-          `${most[1]} alerts`;
-        document.getElementById("statUnack").textContent = unack;
-        document.getElementById("statAck").textContent = ack;
-
-        // Bars
-        const max = Math.max(seizure, fall, panic, 1);
-        document.getElementById("barSeizure").style.width =
-          (seizure / max) * 100 + "%";
-        document.getElementById("barFall").style.width =
-          (fall / max) * 100 + "%";
-        document.getElementById("barPanic").style.width =
-          (panic / max) * 100 + "%";
-        document.getElementById("countSeizure").textContent = seizure;
-        document.getElementById("countFall").textContent = fall;
-        document.getElementById("countPanic").textContent = panic;
-
-        // Wearers (uses friendly name when available)
-        const wearerMap = {};
-        alerts.forEach((a) => {
-          const w = a.wearerId || "Unknown";
-          wearerMap[w] = (wearerMap[w] || 0) + 1;
-        });
-        const wearerHtml = Object.entries(wearerMap)
-          .sort((a, b) => b[1] - a[1])
-          .map(
-            ([w, count]) => `
-          <div style="display:flex; justify-content:space-between; align-items:center;
-            padding:8px 0; border-bottom:1px solid #f1f5f9; font-size:13px;">
-            <span>👤 ${wearerNameMap[w] || w}</span>
-            <span style="font-weight:bold; color:#1e293b;">${count} alerts</span>
-          </div>
-        `,
-          )
-          .join("");
-        document.getElementById("wearerList").innerHTML = wearerHtml;
-
-        // Last updated
-        document.getElementById("lastUpdated").textContent =
-          "Last updated: " +
-          new Date().toLocaleTimeString("en-PH", { timeZone: "Asia/Manila" });
-
-        // Show content
-        document.getElementById("loadingMsg").style.display = "none";
-        document.getElementById("content").style.display = "block";
+        return new Date(
+          alert.timestamp.seconds *
+            1000,
+        );
       }
 
-      // ── FIRESTORE: listen to alerts, filtered by wearerId(s) when available ──
-      let alertsUnsubscribe = null;
+      function startOfDay(
+        d,
+      ) {
+        const x =
+          new Date(d);
 
-      function listenToAlerts(wearerIds) {
-        if (alertsUnsubscribe) {
-          alertsUnsubscribe(); // stop any previous listener before starting a new one
-        }
-        let query = db.collection("alerts");
-        if (wearerIds) {
-          const idList = Array.isArray(wearerIds) ? wearerIds : [wearerIds];
-          if (idList.length === 1) {
-            query = query.where("wearerId", "==", idList[0]);
-          } else if (idList.length > 1) {
-            query = query.where("wearerId", "in", idList.slice(0, 10)); // Firestore 'in' supports max 10
-          }
-        }
-        alertsUnsubscribe = query.onSnapshot(
-          function (snapshot) {
-            const alerts = [];
-            snapshot.forEach((doc) => alerts.push(doc.data()));
-            renderStats(alerts);
-          },
-          function (error) {
-            console.error("Alerts listener error:", error);
-            document.getElementById("loadingMsg").textContent =
-              "⚠️ Could not load alert data";
+        x.setHours(
+          0,
+          0,
+          0,
+          0,
+        );
+
+        return x;
+      }
+
+      function endOfDay(
+        d,
+      ) {
+        const x =
+          new Date(d);
+
+        x.setHours(
+          23,
+          59,
+          59,
+          999,
+        );
+
+        return x;
+      }
+
+      function formatDateShort(
+        d,
+      ) {
+        return d.toLocaleDateString(
+          "en-PH",
+          {
+            timeZone:
+              "Asia/Manila",
+
+            month:
+              "short",
+
+            day:
+              "numeric",
+
+            year:
+              "numeric",
           },
         );
       }
 
-      // ── RESOLVE LOGGED-IN CAREGIVER → CONNECTED WEARER(S) ────────────────
-      // Schema:
-      //   caregiver_connections: { caregiverUid, wearerId, status } — status must be "accepted"
-      //   wearers: { wearerId, wearerName } — used only for a friendly display name
+      function getActiveDateRange() {
+        if (
+          customFrom ||
+          customTo
+        ) {
+          return [
+            customFrom,
+            customTo,
+          ];
+        }
+
+        const now =
+          new Date();
+
+        if (
+          currentQuickRange ===
+          "today"
+        ) {
+          return [
+            startOfDay(now),
+            endOfDay(now),
+          ];
+        }
+
+        if (
+          currentQuickRange ===
+          "7"
+        ) {
+          const from =
+            new Date(now);
+
+          from.setDate(
+            from.getDate() - 6,
+          );
+
+          return [
+            startOfDay(from),
+            endOfDay(now),
+          ];
+        }
+
+        if (
+          currentQuickRange ===
+          "30"
+        ) {
+          const from =
+            new Date(now);
+
+          from.setDate(
+            from.getDate() - 29,
+          );
+
+          return [
+            startOfDay(from),
+            endOfDay(now),
+          ];
+        }
+
+        return [
+          null,
+          null,
+        ];
+      }
+
+      // ============================================================
+      // FILTER ALERTS BY DATE
+      // ============================================================
+
+      function getFilteredAlerts() {
+        const [from, to] =
+          getActiveDateRange();
+
+        return allAlerts.filter(
+          (alert) => {
+            if (
+              !from &&
+              !to
+            ) {
+              return true;
+            }
+
+            const date =
+              toJsDate(alert);
+
+            if (!date) {
+              return false;
+            }
+
+            if (
+              from &&
+              date < from
+            ) {
+              return false;
+            }
+
+            if (
+              to &&
+              date > to
+            ) {
+              return false;
+            }
+
+            return true;
+          },
+        );
+      }
+
+      // ============================================================
+      // PERCENT
+      // ============================================================
+
+      function percentage(
+        count,
+        total,
+      ) {
+        if (
+          total <= 0
+        ) {
+          return 0;
+        }
+
+        return (
+          (count / total) *
+          100
+        );
+      }
+
+      function formatPercent(
+        value,
+      ) {
+        if (
+          Number.isInteger(
+            value,
+          )
+        ) {
+          return value + "%";
+        }
+
+        return (
+          value.toFixed(1) +
+          "%"
+        );
+      }
+
+      // ============================================================
+      // RENDER
+      // ============================================================
+
+      function renderStats() {
+        const alerts =
+          getFilteredAlerts();
+
+        const total =
+          alerts.length;
+
+        document.getElementById(
+          "loadingMsg",
+        ).style.display =
+          "none";
+
+        document.getElementById(
+          "lastUpdated",
+        ).textContent =
+          "Last updated: " +
+          new Date().toLocaleTimeString(
+            "en-PH",
+            {
+              timeZone:
+                "Asia/Manila",
+            },
+          );
+
+        if (
+          total === 0
+        ) {
+          document.getElementById(
+            "content",
+          ).style.display =
+            "none";
+
+          document.getElementById(
+            "emptyState",
+          ).style.display =
+            "block";
+
+          return;
+        }
+
+        document.getElementById(
+          "emptyState",
+        ).style.display =
+          "none";
+
+        // ========================================================
+        // TYPE COUNTS
+        // ========================================================
+
+        const seizure =
+          alerts.filter(
+            (a) =>
+              (a.type || "")
+                .toLowerCase() ===
+              "seizure",
+          ).length;
+
+        const fall =
+          alerts.filter(
+            (a) =>
+              (a.type || "")
+                .toLowerCase() ===
+              "fall",
+          ).length;
+
+        const panic =
+          alerts.filter(
+            (a) =>
+              (a.type || "")
+                .toLowerCase() ===
+              "panic",
+          ).length;
+
+        const physiological =
+          alerts.filter(
+            (a) =>
+              (a.type || "")
+                .toLowerCase() ===
+              "physiological",
+          ).length;
+
+        // ========================================================
+        // STATUS COUNTS
+        // ========================================================
+
+        const unack =
+          alerts.filter(
+            (a) =>
+              a.status ===
+              "unacknowledged",
+          ).length;
+
+        const ack =
+          alerts.filter(
+            (a) =>
+              a.status ===
+              "acknowledged",
+          ).length;
+
+        const falseAlarm =
+          alerts.filter(
+            (a) =>
+              a.status ===
+              "false_alarm",
+          ).length;
+
+        // ========================================================
+        // MOST COMMON TYPE
+        // ========================================================
+
+        const types = {
+          Seizure:
+            seizure,
+
+          Fall:
+            fall,
+
+          Panic:
+            panic,
+
+          Physiological:
+            physiological,
+        };
+
+        const sortedTypes =
+          Object.entries(
+            types,
+          ).sort(
+            (a, b) =>
+              b[1] -
+              a[1],
+          );
+
+        const most =
+          sortedTypes[0];
+
+        // ========================================================
+        // STATS
+        // ========================================================
+
+        document.getElementById(
+          "statTotal",
+        ).textContent =
+          total;
+
+        document.getElementById(
+          "statMost",
+        ).textContent =
+          most[1] > 0
+            ? most[0]
+            : "—";
+
+        document.getElementById(
+          "statMostCount",
+        ).textContent =
+          most[1] > 0
+            ? `${most[1]} alerts`
+            : "No alert type data";
+
+        document.getElementById(
+          "statUnack",
+        ).textContent =
+          unack;
+
+        document.getElementById(
+          "statAck",
+        ).textContent =
+          ack;
+
+        document.getElementById(
+          "statFalseAlarm",
+        ).textContent =
+          falseAlarm;
+
+        // ========================================================
+        // TYPE DISTRIBUTION
+        // ========================================================
+
+        const typeTotal =
+          seizure +
+          fall +
+          panic +
+          physiological;
+
+        const pSeizure =
+          percentage(
+            seizure,
+            typeTotal,
+          );
+
+        const pFall =
+          percentage(
+            fall,
+            typeTotal,
+          );
+
+        const pPanic =
+          percentage(
+            panic,
+            typeTotal,
+          );
+
+        const pPhysiological =
+          percentage(
+            physiological,
+            typeTotal,
+          );
+
+        document.getElementById(
+          "countSeizure",
+        ).textContent =
+          seizure;
+
+        document.getElementById(
+          "countFall",
+        ).textContent =
+          fall;
+
+        document.getElementById(
+          "countPanic",
+        ).textContent =
+          panic;
+
+        document.getElementById(
+          "countPhysiological",
+        ).textContent =
+          physiological;
+
+        document.getElementById(
+          "percentSeizure",
+        ).textContent =
+          formatPercent(
+            pSeizure,
+          );
+
+        document.getElementById(
+          "percentFall",
+        ).textContent =
+          formatPercent(
+            pFall,
+          );
+
+        document.getElementById(
+          "percentPanic",
+        ).textContent =
+          formatPercent(
+            pPanic,
+          );
+
+        document.getElementById(
+          "percentPhysiological",
+        ).textContent =
+          formatPercent(
+            pPhysiological,
+          );
+
+        document.getElementById(
+          "donutTotal",
+        ).textContent =
+          typeTotal;
+
+        // ========================================================
+        // DONUT SEGMENTS
+        // ========================================================
+
+        if (
+          typeTotal >
+          0
+        ) {
+          const seizureEnd =
+            pSeizure;
+
+          const fallEnd =
+            seizureEnd +
+            pFall;
+
+          const panicEnd =
+            fallEnd +
+            pPanic;
+
+          const physioEnd =
+            panicEnd +
+            pPhysiological;
+
+          document.getElementById(
+            "donutChart",
+          ).style.background =
+            `conic-gradient(
+              #a855f7 0% ${seizureEnd}%,
+              #f97316 ${seizureEnd}% ${fallEnd}%,
+              #ef4444 ${fallEnd}% ${panicEnd}%,
+              #3b82f6 ${panicEnd}% ${physioEnd}%
+            )`;
+        } else {
+          document.getElementById(
+            "donutChart",
+          ).style.background =
+            "#e2e8f0";
+        }
+
+        // ========================================================
+        // WEARER COUNTS
+        // ========================================================
+
+        const wearerMap =
+          {};
+
+        alerts.forEach(
+          (a) => {
+            const wearerId =
+              a.wearerId ||
+              "Unknown";
+
+            wearerMap[
+              wearerId
+            ] =
+              (
+                wearerMap[
+                  wearerId
+                ] ||
+                0
+              ) +
+              1;
+          },
+        );
+
+        const wearerHtml =
+          Object.entries(
+            wearerMap,
+          )
+            .sort(
+              (a, b) =>
+                b[1] -
+                a[1],
+            )
+            .map(
+              ([
+                wearerId,
+                count,
+              ]) => `
+                <div class="wearer-item">
+                  <span>
+                    👤 ${
+                      wearerNameMap[
+                        wearerId
+                      ] ||
+                      wearerId
+                    }
+                  </span>
+
+                  <span class="wearer-count">
+                    ${count} alerts
+                  </span>
+                </div>
+              `,
+            )
+            .join("");
+
+        document.getElementById(
+          "wearerList",
+        ).innerHTML =
+          wearerHtml;
+
+        document.getElementById(
+          "content",
+        ).style.display =
+          "block";
+      }
+
+      // ============================================================
+      // UPDATE DATE SUMMARY
+      // ============================================================
+
+      function updateDateSummary() {
+        const [from, to] =
+          getActiveDateRange();
+
+        const summaryEl =
+          document.getElementById(
+            "dateSummary",
+          );
+
+        const toggleLabel =
+          document.getElementById(
+            "dateToggleLabel",
+          );
+
+        const toggleBtn =
+          document.getElementById(
+            "dateToggleBtn",
+          );
+
+        const totalSub =
+          document.getElementById(
+            "statTotalSub",
+          );
+
+        let text =
+          "Showing all dates";
+
+        let short =
+          "All Time";
+
+        let statText =
+          "All time";
+
+        if (
+          from &&
+          to
+        ) {
+          text =
+            `Showing ${formatDateShort(
+              from,
+            )} – ${formatDateShort(
+              to,
+            )}`;
+
+          short =
+            `${formatDateShort(
+              from,
+            )} – ${formatDateShort(
+              to,
+            )}`;
+
+          statText =
+            "Selected date range";
+        } else if (from) {
+          text =
+            `Showing from ${formatDateShort(
+              from,
+            )}`;
+
+          short =
+            `From ${formatDateShort(
+              from,
+            )}`;
+
+          statText =
+            "Selected date range";
+        } else if (to) {
+          text =
+            `Showing up to ${formatDateShort(
+              to,
+            )}`;
+
+          short =
+            `Up to ${formatDateShort(
+              to,
+            )}`;
+
+          statText =
+            "Selected date range";
+        }
+
+        summaryEl.textContent =
+          text;
+
+        toggleLabel.textContent =
+          short;
+
+        toggleBtn.classList.toggle(
+          "has-filter",
+          !(
+            !from &&
+            !to
+          ),
+        );
+
+        if (
+          totalSub
+        ) {
+          totalSub.textContent =
+            statText;
+        }
+      }
+
+      // ============================================================
+      // DATE PANEL
+      // ============================================================
+
+      function toggleDatePanel() {
+        const panel =
+          document.getElementById(
+            "datePanel",
+          );
+
+        if (
+          panel.classList.contains(
+            "open",
+          )
+        ) {
+          closeDatePanel();
+        } else {
+          openDatePanel();
+        }
+      }
+
+      function openDatePanel() {
+        document
+          .getElementById(
+            "datePanel",
+          )
+          .classList.add(
+            "open",
+          );
+
+        document
+          .getElementById(
+            "backdrop",
+          )
+          .classList.add(
+            "open",
+          );
+      }
+
+      function closeDatePanel() {
+        document
+          .getElementById(
+            "datePanel",
+          )
+          .classList.remove(
+            "open",
+          );
+
+        document
+          .getElementById(
+            "backdrop",
+          )
+          .classList.remove(
+            "open",
+          );
+      }
+
+      // ============================================================
+      // QUICK RANGE
+      // ============================================================
+
+      function setQuickRange(
+        range,
+      ) {
+        currentQuickRange =
+          range;
+
+        customFrom =
+          null;
+
+        customTo =
+          null;
+
+        document.getElementById(
+          "dateFrom",
+        ).value =
+          "";
+
+        document.getElementById(
+          "dateTo",
+        ).value =
+          "";
+
+        document
+          .querySelectorAll(
+            ".quick-btn",
+          )
+          .forEach(
+            (button) =>
+              button.classList.remove(
+                "active",
+              ),
+          );
+
+        document
+          .querySelector(
+            `[data-range="${range}"]`,
+          )
+          .classList.add(
+            "active",
+          );
+
+        updateDateSummary();
+
+        renderStats();
+
+        closeDatePanel();
+      }
+
+      // ============================================================
+      // CUSTOM DATE
+      // ============================================================
+
+      function onCustomDateChange() {
+        const fromValue =
+          document.getElementById(
+            "dateFrom",
+          ).value;
+
+        const toValue =
+          document.getElementById(
+            "dateTo",
+          ).value;
+
+        customFrom =
+          fromValue
+            ? startOfDay(
+                new Date(
+                  fromValue +
+                    "T00:00:00",
+                ),
+              )
+            : null;
+
+        customTo =
+          toValue
+            ? endOfDay(
+                new Date(
+                  toValue +
+                    "T00:00:00",
+                ),
+              )
+            : null;
+
+        document
+          .querySelectorAll(
+            ".quick-btn",
+          )
+          .forEach(
+            (button) =>
+              button.classList.remove(
+                "active",
+              ),
+          );
+
+        if (
+          !fromValue &&
+          !toValue
+        ) {
+          currentQuickRange =
+            "all";
+
+          document
+            .querySelector(
+              '[data-range="all"]',
+            )
+            .classList.add(
+              "active",
+            );
+        }
+
+        updateDateSummary();
+
+        renderStats();
+      }
+
+      // ============================================================
+      // CLEAR DATES
+      // ============================================================
+
+      function clearDates() {
+        document.getElementById(
+          "dateFrom",
+        ).value =
+          "";
+
+        document.getElementById(
+          "dateTo",
+        ).value =
+          "";
+
+        currentQuickRange =
+          "all";
+
+        customFrom =
+          null;
+
+        customTo =
+          null;
+
+        document
+          .querySelectorAll(
+            ".quick-btn",
+          )
+          .forEach(
+            (button) =>
+              button.classList.remove(
+                "active",
+              ),
+          );
+
+        document
+          .querySelector(
+            '[data-range="all"]',
+          )
+          .classList.add(
+            "active",
+          );
+
+        updateDateSummary();
+
+        renderStats();
+
+        closeDatePanel();
+      }
+
+      // ============================================================
+      // FIRESTORE ALERT LISTENER
+      // ============================================================
+
+      let alertsUnsubscribe =
+        null;
+
+      function listenToAlerts(
+        wearerIds,
+      ) {
+        if (
+          alertsUnsubscribe
+        ) {
+          alertsUnsubscribe();
+        }
+
+        let query =
+          db.collection(
+            "alerts",
+          );
+
+        if (wearerIds) {
+          const idList =
+            Array.isArray(
+              wearerIds,
+            )
+              ? wearerIds
+              : [wearerIds];
+
+          if (
+            idList.length ===
+            1
+          ) {
+            query =
+              query.where(
+                "wearerId",
+                "==",
+                idList[0],
+              );
+          } else if (
+            idList.length >
+            1
+          ) {
+            query =
+              query.where(
+                "wearerId",
+                "in",
+                idList.slice(
+                  0,
+                  10,
+                ),
+              );
+          }
+        }
+
+        alertsUnsubscribe =
+          query.onSnapshot(
+            function (
+              snapshot,
+            ) {
+              allAlerts =
+                [];
+
+              snapshot.forEach(
+                (
+                  doc,
+                ) => {
+                  allAlerts.push(
+                    doc.data(),
+                  );
+                },
+              );
+
+              renderStats();
+            },
+
+            function (
+              error,
+            ) {
+              console.error(
+                "Alerts listener error:",
+                error,
+              );
+
+              document.getElementById(
+                "loadingMsg",
+              ).textContent =
+                "⚠️ Could not load alert data";
+            },
+          );
+      }
+
+      // ============================================================
+      // CURRENT CAREGIVER → CONNECTED WEARER
+      // ============================================================
+
       async function initStatsForCurrentUser() {
-        const uid = getQueryParam("uid");
+        const uid =
+          getQueryParam(
+            "uid",
+          );
 
         if (!uid) {
-          // No uid passed in the URL (e.g. testing directly in a browser) —
-          // fall back to showing stats for every alert, unfiltered.
-          listenToAlerts(null);
+          listenToAlerts(
+            null,
+          );
+
           return;
         }
 
         try {
-          const connectionsSnap = await db
-            .collection("caregiver_connections")
-            .where("caregiverUid", "==", uid)
-            .where("status", "==", "accepted")
-            .get();
+          const connectionsSnap =
+            await db
+              .collection(
+                "caregiver_connections",
+              )
+              .where(
+                "caregiverUid",
+                "==",
+                uid,
+              )
+              .where(
+                "status",
+                "==",
+                "accepted",
+              )
+              .get();
 
-          if (connectionsSnap.empty) {
-            setWearerLine("⚠️ No accepted wearer connection found", true);
-            listenToAlerts(null);
+          if (
+            connectionsSnap.empty
+          ) {
+            setWearerLine(
+              "⚠️ No accepted wearer connection found",
+              true,
+            );
+
+            listenToAlerts(
+              null,
+            );
+
             return;
           }
 
           const wearerIds = [
             ...new Set(
               connectionsSnap.docs
-                .map((d) => d.data().wearerId)
-                .filter(Boolean),
+                .map(
+                  (
+                    document,
+                  ) =>
+                    document.data()
+                      .wearerId,
+                )
+                .filter(
+                  Boolean,
+                ),
             ),
           ];
 
-          if (wearerIds.length === 0) {
-            setWearerLine("⚠️ No wearer linked to this account", true);
-            listenToAlerts(null);
+          if (
+            wearerIds.length ===
+            0
+          ) {
+            setWearerLine(
+              "⚠️ No wearer linked to this account",
+              true,
+            );
+
+            listenToAlerts(
+              null,
+            );
+
             return;
           }
 
-          // Look up friendly wearer name(s) (falls back to raw id if not found)
-          let displayNames = wearerIds;
+          let displayNames =
+            wearerIds;
+
           try {
-            const wearersSnap = await db
-              .collection("wearers")
-              .where("wearerId", "in", wearerIds.slice(0, 10)) // Firestore 'in' supports max 10
-              .get();
-            const nameMap = {};
-            wearersSnap.forEach((doc) => {
-              const w = doc.data();
-              nameMap[w.wearerId] = w.wearerName || w.wearerId;
-            });
-            displayNames = wearerIds.map((id) => nameMap[id] || id);
-            wearerNameMap = nameMap;
-          } catch (lookupErr) {
-            console.warn("Could not look up wearer names:", lookupErr);
+            const wearersSnap =
+              await db
+                .collection(
+                  "wearers",
+                )
+                .where(
+                  "wearerId",
+                  "in",
+                  wearerIds.slice(
+                    0,
+                    10,
+                  ),
+                )
+                .get();
+
+            const nameMap =
+              {};
+
+            wearersSnap.forEach(
+              (
+                document,
+              ) => {
+                const wearer =
+                  document.data();
+
+                nameMap[
+                  wearer.wearerId
+                ] =
+                  wearer.wearerName ||
+                  wearer.wearerId;
+              },
+            );
+
+            displayNames =
+              wearerIds.map(
+                (
+                  id,
+                ) =>
+                  nameMap[id] ||
+                  id,
+              );
+
+            wearerNameMap =
+              nameMap;
+          } catch (
+            lookupError
+          ) {
+            console.warn(
+              "Could not look up wearer names:",
+              lookupError,
+            );
           }
 
-          setWearerLine(`👤 Showing data for: ${displayNames.join(", ")}`, false);
-          listenToAlerts(wearerIds);
-        } catch (err) {
-          console.error("Failed to resolve caregiver → wearer:", err);
-          setWearerLine("⚠️ Error loading connection", true);
-          listenToAlerts(null);
+          setWearerLine(
+            `👤 Showing data for: ${displayNames.join(
+              ", ",
+            )}`,
+            false,
+          );
+
+          listenToAlerts(
+            wearerIds,
+          );
+        } catch (
+          error
+        ) {
+          console.error(
+            "Failed to resolve caregiver → wearer:",
+            error,
+          );
+
+          setWearerLine(
+            "⚠️ Error loading connection",
+            true,
+          );
+
+          listenToAlerts(
+            null,
+          );
         }
       }
+
+      // ============================================================
+      // START
+      // ============================================================
+
+      updateDateSummary();
 
       initStatsForCurrentUser();
     </script>
