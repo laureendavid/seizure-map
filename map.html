@@ -46,7 +46,7 @@
         border-radius: 20px;
         font-size: 12px;
         font-weight: bold;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
         max-width: 55vw;
         white-space: nowrap;
         overflow: hidden;
@@ -70,7 +70,7 @@
         font-size: 12px;
         font-weight: bold;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
         display: flex;
         align-items: center;
         gap: 4px;
@@ -108,7 +108,7 @@
         background: white;
         padding: 14px;
         border-radius: 16px;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
         display: none;
         flex-direction: column;
         gap: 10px;
@@ -160,7 +160,6 @@
         font-size: 12px;
         font-weight: bold;
         cursor: pointer;
-        transition: all 0.15s;
         white-space: nowrap;
       }
 
@@ -219,7 +218,7 @@
         padding-top: 8px;
       }
 
-      /* TYPE FILTER BAR (scrolls sideways on small screens) */
+      /* TYPE FILTER BAR */
       .filter-bar {
         position: fixed;
         bottom: 24px;
@@ -231,7 +230,7 @@
         background: white;
         padding: 8px 12px;
         border-radius: 30px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
         max-width: 96vw;
         overflow-x: auto;
         scrollbar-width: none;
@@ -249,15 +248,12 @@
         font-weight: bold;
         cursor: pointer;
         opacity: 0.35;
-        transition: all 0.2s;
-        position: relative;
         white-space: nowrap;
         flex-shrink: 0;
       }
 
       .filter-btn.active {
         opacity: 1;
-        transform: scale(1.05);
       }
 
       .btn-all { background: #1e293b; color: white; }
@@ -284,7 +280,7 @@
         border-radius: 16px;
         font-size: 11px;
         font-weight: bold;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
         max-width: 55vw;
         white-space: nowrap;
         overflow: hidden;
@@ -305,7 +301,7 @@
         background: white;
         padding: 14px 22px;
         border-radius: 14px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
         font-size: 13px;
         color: #64748b;
         font-weight: bold;
@@ -314,62 +310,7 @@
         max-width: 80vw;
       }
 
-      /* ============================================================
-         MAP PINS
-         ============================================================ */
-      .pin-wrap {
-        position: relative;
-        width: 28px;
-        height: 32px;
-      }
-
-      .pin-body {
-        position: absolute;
-        left: 3px;
-        top: 0;
-        width: 22px;
-        height: 22px;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        border: 2px solid white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .pin-icon {
-        transform: rotate(45deg);
-        font-size: 10px;
-        line-height: 1;
-      }
-
-      /* acknowledged pins look calmer */
-      .pin-wrap.acked .pin-body {
-        opacity: 0.8;
-      }
-
-      /* small green check on acknowledged pins */
-      .pin-check {
-        position: absolute;
-        right: -1px;
-        top: -3px;
-        width: 12px;
-        height: 12px;
-        background: #16a34a;
-        color: white;
-        border: 1.5px solid white;
-        border-radius: 50%;
-        font-size: 7px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2;
-      }
-
-      /* ============================================================
-         CLUSTER BUBBLES
-         ============================================================ */
+      /* CLUSTER BUBBLES */
       .cluster-bubble {
         width: 30px;
         height: 30px;
@@ -388,14 +329,12 @@
         background: #ef4444;
       }
 
-      /* ============================================================
-         POPUP CARD
-         ============================================================ */
+      /* POPUP CARD */
       .leaflet-popup-content-wrapper {
         padding: 0;
         overflow: hidden;
-        border-radius: 16px;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+        border-radius: 14px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       }
 
       .leaflet-popup-content {
@@ -481,7 +420,6 @@
         word-break: break-word;
       }
 
-      /* vital sign chips (physiological alerts) */
       .vitals {
         display: flex;
         gap: 8px;
@@ -519,19 +457,6 @@
 
       .pop-status.unack { background: #fee2e2; color: #dc2626; }
       .pop-status.ack { background: #dcfce7; color: #16a34a; }
-
-      .pop-directions {
-        display: block;
-        margin-top: 10px;
-        text-align: center;
-        background: #1e293b;
-        color: white !important;
-        text-decoration: none;
-        padding: 8px;
-        border-radius: 10px;
-        font-size: 12px;
-        font-weight: bold;
-      }
     </style>
   </head>
 
@@ -624,7 +549,6 @@
 
       // ============================================================
       // ALERT TYPES
-      // Add new alert types here only (color, icon, label, filter button)
       // ============================================================
 
       const TYPE_CONFIG = {
@@ -636,8 +560,6 @@
 
       const DEFAULT_TYPE = { color: "#6b7280", icon: "📍", label: "ALERT" };
 
-      // Different spellings in Firestore are treated as the same type.
-      // Example: "vitals", "heart_rate", "spo2" all count as "physiological".
       const TYPE_ALIASES = {
         physiological: "physiological",
         physiologic: "physiological",
@@ -654,8 +576,8 @@
         return TYPE_ALIASES[t] || t;
       }
 
-      function getTypeConfig(raw) {
-        return TYPE_CONFIG[normalizeType(raw)] || DEFAULT_TYPE;
+      function getTypeConfig(normalized) {
+        return TYPE_CONFIG[normalized] || DEFAULT_TYPE;
       }
 
       function esc(value) {
@@ -668,28 +590,39 @@
 
       // ============================================================
       // MAP
-      // No + / - zoom buttons, touch pinch zoom still works
+      // preferCanvas: pins are drawn on one canvas instead of
+      // hundreds of DOM elements, so panning/zooming stays smooth.
       // ============================================================
 
       const map = L.map("map", {
         zoomControl: false,
+        preferCanvas: true,
       }).setView([14.7948, 120.9252], 14);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap",
         maxZoom: 19,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
       }).addTo(map);
 
-      // Cluster bubbles turn red if any alert inside still needs attention
       const markerCluster = L.markerClusterGroup({
         showCoverageOnHover: false,
-        maxClusterRadius: 50,
+        maxClusterRadius: 60,
+        chunkedLoading: true,
+        animate: false,
+        animateAddingMarkers: false,
         iconCreateFunction: function (cluster) {
           const children = cluster.getAllChildMarkers();
 
-          const hasUnack = children.some(function (m) {
-            return m.options.isUnack;
-          });
+          let hasUnack = false;
+
+          for (let i = 0; i < children.length; i++) {
+            if (children[i].options.isUnack) {
+              hasUnack = true;
+              break;
+            }
+          }
 
           return L.divIcon({
             html:
@@ -714,45 +647,20 @@
       let hasFittedOnce = false;
 
       // ============================================================
-      // PIN ICON
+      // PREPARE ALERT (compute once, not on every filter/render)
       // ============================================================
 
-      function getIcon(type, isUnack) {
-        const cfg = getTypeConfig(type);
-
-        const check = isUnack ? "" : '<div class="pin-check">✓</div>';
-
-        return L.divIcon({
-          className: "",
-          html:
-            '<div class="pin-wrap ' +
-            (isUnack ? "unack" : "acked") +
-            '">' +
-            '<div class="pin-body" style="background:' +
-            cfg.color +
-            ';">' +
-            '<span class="pin-icon">' +
-            cfg.icon +
-            "</span></div>" +
-            check +
-            "</div>",
-          iconSize: [28, 32],
-          iconAnchor: [14, 28],
-          popupAnchor: [0, -28],
-        });
+      function prepareAlert(a) {
+        a._type = normalizeType(a.type);
+        a._unack = a.status === "unacknowledged";
+        a._ms =
+          a.timestamp && a.timestamp.seconds ? a.timestamp.seconds * 1000 : null;
+        return a;
       }
 
       // ============================================================
       // DATE HELPERS
       // ============================================================
-
-      function toJsDate(alert) {
-        if (!alert.timestamp || !alert.timestamp.seconds) {
-          return null;
-        }
-
-        return new Date(alert.timestamp.seconds * 1000);
-      }
 
       function startOfDay(d) {
         const x = new Date(d);
@@ -801,57 +709,15 @@
         return [null, null];
       }
 
-      function passesDateFilter(a, from, to) {
-        if (!from && !to) {
-          return true;
-        }
-
-        const d = toJsDate(a);
-
-        if (!d) {
-          return false;
-        }
-
-        if (from && d < from) {
-          return false;
-        }
-
-        if (to && d > to) {
-          return false;
-        }
-
-        return true;
-      }
-
       // ============================================================
-      // FILTER
-      // ============================================================
-
-      function getFilteredAlerts() {
-        const [from, to] = getActiveDateRange();
-
-        return allAlerts.filter(function (a) {
-          if (
-            currentTypeFilter !== "all" &&
-            normalizeType(a.type) !== currentTypeFilter
-          ) {
-            return false;
-          }
-
-          return passesDateFilter(a, from, to);
-        });
-      }
-
-      // ============================================================
-      // POPUP
+      // POPUP (built only when a pin is tapped)
       // ============================================================
 
       function buildPopup(a) {
-        const cfg = getTypeConfig(a.type);
-        const isUnack = a.status === "unacknowledged";
-        const isPhysio = normalizeType(a.type) === "physiological";
+        const cfg = getTypeConfig(a._type);
+        const isPhysio = a._type === "physiological";
 
-        const d = toJsDate(a);
+        const d = a._ms ? new Date(a._ms) : null;
 
         const dateStr = d ? formatDateShort(d) : "N/A";
 
@@ -863,7 +729,6 @@
             })
           : "";
 
-        // Optional vital sign fields. Shown only when present in the alert.
         const hr =
           a.heartRate !== undefined
             ? a.heartRate
@@ -908,13 +773,6 @@
             "</span></div>"
           : "";
 
-        const directions =
-          '<a class="pop-directions" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=' +
-          esc(a.latitude) +
-          "," +
-          esc(a.longitude) +
-          '">🧭 Get Directions</a>';
-
         return (
           '<div class="pop-header" style="background:' +
           cfg.color +
@@ -943,13 +801,45 @@
           "</span></div>" +
           detailHtml +
           '<span class="pop-status ' +
-          (isUnack ? "unack" : "ack") +
+          (a._unack ? "unack" : "ack") +
           '">' +
-          (isUnack ? "🔴 Needs Attention" : "✅ Acknowledged") +
+          (a._unack ? "🔴 Needs Attention" : "✅ Acknowledged") +
           "</span>" +
-          directions +
           "</div>"
         );
+      }
+
+      // ============================================================
+      // SIMPLE PIN: a plain colored dot
+      // Unacknowledged = bigger and solid
+      // Acknowledged = smaller and faded
+      // ============================================================
+
+      function createMarker(a) {
+        const cfg = getTypeConfig(a._type);
+
+        const marker = L.circleMarker([a.latitude, a.longitude], {
+          radius: a._unack ? 10 : 7,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: cfg.color,
+          fillOpacity: a._unack ? 1 : 0.55,
+          isUnack: a._unack,
+        });
+
+        // Popup content is created lazily, only when opened
+        marker.bindPopup(
+          function () {
+            return buildPopup(a);
+          },
+          {
+            maxWidth: 260,
+            minWidth: 250,
+            autoPanPadding: [20, 80],
+          },
+        );
+
+        return marker;
       }
 
       // ============================================================
@@ -957,42 +847,69 @@
       // ============================================================
 
       function renderMarkers(fitView) {
-        markerCluster.clearLayers();
-
-        const filtered = getFilteredAlerts();
-
-        const unack = filtered.filter(function (a) {
-          return a.status === "unacknowledged";
-        }).length;
-
-        const badge = document.getElementById("alertBadge");
-
-        badge.textContent =
-          unack > 0 ? "🔴 " + unack + " Unacknowledged" : "✅ All Acknowledged";
-
-        badge.classList.toggle("ok", unack === 0);
-
-        // Counts shown on filter buttons follow the date filter only
         const [from, to] = getActiveDateRange();
 
-        const dateOnly = allAlerts.filter(function (a) {
-          return passesDateFilter(a, from, to);
-        });
+        const fromMs = from ? from.getTime() : null;
+        const toMs = to ? to.getTime() : null;
 
-        const counts = { all: dateOnly.length };
+        const counts = { all: 0 };
 
         Object.keys(TYPE_CONFIG).forEach(function (k) {
           counts[k] = 0;
         });
 
-        dateOnly.forEach(function (a) {
-          const t = normalizeType(a.type);
+        const ackedLayers = [];
+        const unackLayers = [];
+        let unackCount = 0;
+        let shownCount = 0;
 
-          if (counts[t] !== undefined) {
-            counts[t]++;
+        for (let i = 0; i < allAlerts.length; i++) {
+          const a = allAlerts[i];
+
+          // date filter
+          if (fromMs !== null || toMs !== null) {
+            if (a._ms === null) continue;
+            if (fromMs !== null && a._ms < fromMs) continue;
+            if (toMs !== null && a._ms > toMs) continue;
           }
-        });
 
+          // counts follow the date filter only
+          counts.all++;
+
+          if (counts[a._type] !== undefined) {
+            counts[a._type]++;
+          }
+
+          // type filter
+          if (currentTypeFilter !== "all" && a._type !== currentTypeFilter) {
+            continue;
+          }
+
+          shownCount++;
+
+          if (a._unack) unackCount++;
+
+          if (!a.latitude || !a.longitude) continue;
+
+          // acknowledged added first so unacknowledged draw on top
+          if (a._unack) {
+            unackLayers.push(createMarker(a));
+          } else {
+            ackedLayers.push(createMarker(a));
+          }
+        }
+
+        // Alert badge
+        const badge = document.getElementById("alertBadge");
+
+        badge.textContent =
+          unackCount > 0
+            ? "🔴 " + unackCount + " Unacknowledged"
+            : "✅ All Acknowledged";
+
+        badge.classList.toggle("ok", unackCount === 0);
+
+        // Filter button counts
         Object.keys(counts).forEach(function (k) {
           const el = document.getElementById("count-" + k);
 
@@ -1001,50 +918,40 @@
           }
         });
 
-        // Newest first
-        filtered.sort(function (a, b) {
-          const da = toJsDate(a);
-          const db2 = toJsDate(b);
-
-          if (!da || !db2) {
-            return 0;
-          }
-
-          return db2 - da;
-        });
-
-        filtered.forEach(function (a) {
-          if (!a.latitude || !a.longitude) {
-            return;
-          }
-
-          const isUnack = a.status === "unacknowledged";
-
-          const marker = L.marker([a.latitude, a.longitude], {
-            icon: getIcon(a.type, isUnack),
-            isUnack: isUnack,
-            // unacknowledged pins always render above acknowledged ones
-            zIndexOffset: isUnack ? 1000 : 0,
-          });
-
-          marker.bindPopup(buildPopup(a), {
-            maxWidth: 260,
-            minWidth: 250,
-            autoPanPadding: [20, 80],
-          });
-
-          markerCluster.addLayer(marker);
-        });
+        // Markers (batch add is much faster than one by one)
+        markerCluster.clearLayers();
+        markerCluster.addLayers(ackedLayers.concat(unackLayers));
 
         document.getElementById("emptyNotice").style.display =
-          filtered.length === 0 ? "block" : "none";
+          shownCount === 0 ? "block" : "none";
 
         if (fitView && markerCluster.getLayers().length > 0) {
           map.fitBounds(markerCluster.getBounds(), {
             padding: [70, 90],
             maxZoom: 17,
+            animate: false,
           });
         }
+      }
+
+      // Merge rapid updates into one render
+      let renderTimer = null;
+      let pendingFit = false;
+
+      function scheduleRender(fitView) {
+        pendingFit = pendingFit || !!fitView;
+
+        if (renderTimer) return;
+
+        renderTimer = setTimeout(function () {
+          renderTimer = null;
+
+          const fit = pendingFit;
+
+          pendingFit = false;
+
+          renderMarkers(fit);
+        }, 120);
       }
 
       // ============================================================
@@ -1226,13 +1133,11 @@
 
         alertsUnsubscribe = query.onSnapshot(
           function (snapshot) {
-            allAlerts = [];
-
-            snapshot.forEach(function (doc) {
-              allAlerts.push(doc.data());
+            allAlerts = snapshot.docs.map(function (doc) {
+              return prepareAlert(doc.data());
             });
 
-            renderMarkers(!hasFittedOnce);
+            scheduleRender(!hasFittedOnce);
 
             hasFittedOnce = true;
           },
