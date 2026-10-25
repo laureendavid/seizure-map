@@ -332,7 +332,6 @@
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
         border: 2px solid white;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -342,36 +341,6 @@
         transform: rotate(45deg);
         font-size: 10px;
         line-height: 1;
-        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
-      }
-
-      /* small shadow dot under the pin tip */
-      .pin-shadow {
-        position: absolute;
-        left: 8px;
-        bottom: 2px;
-        width: 12px;
-        height: 4px;
-        background: rgba(0, 0, 0, 0.25);
-        border-radius: 50%;
-        filter: blur(1px);
-      }
-
-      /* pulsing ring for alerts that still need attention */
-      .pin-pulse {
-        position: absolute;
-        left: 2px;
-        top: -1px;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        animation: pinPulse 1.6s ease-out infinite;
-        pointer-events: none;
-      }
-
-      @keyframes pinPulse {
-        0% { box-shadow: 0 0 0 0 var(--pulse-color, rgba(239, 68, 68, 0.55)); }
-        100% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
       }
 
       /* acknowledged pins look calmer */
@@ -408,7 +377,6 @@
         background: #1e293b;
         color: white;
         border: 2px solid white;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -418,12 +386,6 @@
 
       .cluster-bubble.has-unack {
         background: #ef4444;
-        animation: clusterPulse 1.8s ease-out infinite;
-      }
-
-      @keyframes clusterPulse {
-        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55), 0 3px 10px rgba(0, 0, 0, 0.4); }
-        100% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0), 0 2px 6px rgba(0, 0, 0, 0.4); }
       }
 
       /* ============================================================
@@ -758,12 +720,6 @@
       function getIcon(type, isUnack) {
         const cfg = getTypeConfig(type);
 
-        const pulse = isUnack
-          ? '<div class="pin-pulse" style="--pulse-color:' +
-            cfg.color +
-            '88"></div>'
-          : "";
-
         const check = isUnack ? "" : '<div class="pin-check">✓</div>';
 
         return L.divIcon({
@@ -772,8 +728,6 @@
             '<div class="pin-wrap ' +
             (isUnack ? "unack" : "acked") +
             '">' +
-            pulse +
-            '<div class="pin-shadow"></div>' +
             '<div class="pin-body" style="background:' +
             cfg.color +
             ';">' +
