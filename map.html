@@ -3,20 +3,9 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-    />
-
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-    />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -36,7 +25,6 @@
         background: #f1f5f9;
       }
 
-      /* MAP fills full screen */
       #map {
         position: fixed;
         top: 0;
@@ -63,6 +51,10 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+
+      .alert-badge.ok {
+        background: #16a34a;
       }
 
       /* DATE FILTER TOGGLE */
@@ -94,7 +86,6 @@
         color: white;
       }
 
-      /* BACKDROP */
       .backdrop {
         position: fixed;
         inset: 0;
@@ -228,7 +219,7 @@
         padding-top: 8px;
       }
 
-      /* FILTER BUTTONS */
+      /* TYPE FILTER BAR (scrolls sideways on small screens) */
       .filter-bar {
         position: fixed;
         bottom: 24px;
@@ -241,8 +232,13 @@
         padding: 8px 12px;
         border-radius: 30px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        max-width: 94vw;
+        max-width: 96vw;
         overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .filter-bar::-webkit-scrollbar {
+        display: none;
       }
 
       .filter-btn {
@@ -256,6 +252,7 @@
         transition: all 0.2s;
         position: relative;
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
       .filter-btn.active {
@@ -263,25 +260,11 @@
         transform: scale(1.05);
       }
 
-      .btn-all {
-        background: #1e293b;
-        color: white;
-      }
-
-      .btn-seizure {
-        background: #a855f7;
-        color: white;
-      }
-
-      .btn-fall {
-        background: #f97316;
-        color: white;
-      }
-
-      .btn-panic {
-        background: #ef4444;
-        color: white;
-      }
+      .btn-all { background: #1e293b; color: white; }
+      .btn-seizure { background: #a855f7; color: white; }
+      .btn-fall { background: #f97316; color: white; }
+      .btn-panic { background: #ef4444; color: white; }
+      .btn-physiological { background: #0ea5e9; color: white; }
 
       .filter-count {
         font-size: 10px;
@@ -309,13 +292,8 @@
         display: none;
       }
 
-      .wearer-badge.show {
-        display: block;
-      }
-
-      .wearer-badge.error {
-        color: #dc2626;
-      }
+      .wearer-badge.show { display: block; }
+      .wearer-badge.error { color: #dc2626; }
 
       /* NO RESULTS */
       .empty-notice {
@@ -335,6 +313,263 @@
         text-align: center;
         max-width: 80vw;
       }
+
+      /* ============================================================
+         MAP PINS
+         ============================================================ */
+      .pin-wrap {
+        position: relative;
+        width: 38px;
+        height: 46px;
+      }
+
+      .pin-body {
+        position: absolute;
+        left: 3px;
+        top: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        border: 3px solid white;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .pin-icon {
+        transform: rotate(45deg);
+        font-size: 15px;
+        line-height: 1;
+        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+      }
+
+      /* small shadow dot under the pin tip */
+      .pin-shadow {
+        position: absolute;
+        left: 11px;
+        bottom: 2px;
+        width: 16px;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 50%;
+        filter: blur(1px);
+      }
+
+      /* pulsing ring for alerts that still need attention */
+      .pin-pulse {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        animation: pinPulse 1.6s ease-out infinite;
+        pointer-events: none;
+      }
+
+      @keyframes pinPulse {
+        0% { box-shadow: 0 0 0 0 var(--pulse-color, rgba(239, 68, 68, 0.55)); }
+        100% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+      }
+
+      /* acknowledged pins look calmer */
+      .pin-wrap.acked .pin-body {
+        opacity: 0.8;
+      }
+
+      /* small green check on acknowledged pins */
+      .pin-check {
+        position: absolute;
+        right: -2px;
+        top: -4px;
+        width: 16px;
+        height: 16px;
+        background: #16a34a;
+        color: white;
+        border: 2px solid white;
+        border-radius: 50%;
+        font-size: 9px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+      }
+
+      /* ============================================================
+         CLUSTER BUBBLES
+         ============================================================ */
+      .cluster-bubble {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #1e293b;
+        color: white;
+        border: 3px solid white;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: bold;
+      }
+
+      .cluster-bubble.has-unack {
+        background: #ef4444;
+        animation: clusterPulse 1.8s ease-out infinite;
+      }
+
+      @keyframes clusterPulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55), 0 3px 10px rgba(0, 0, 0, 0.4); }
+        100% { box-shadow: 0 0 0 14px rgba(239, 68, 68, 0), 0 3px 10px rgba(0, 0, 0, 0.4); }
+      }
+
+      /* ============================================================
+         POPUP CARD
+         ============================================================ */
+      .leaflet-popup-content-wrapper {
+        padding: 0;
+        overflow: hidden;
+        border-radius: 16px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+      }
+
+      .leaflet-popup-content {
+        margin: 0;
+        width: 250px !important;
+      }
+
+      .leaflet-container a.leaflet-popup-close-button {
+        color: white;
+        font-size: 20px;
+        top: 6px;
+        right: 8px;
+        z-index: 5;
+      }
+
+      .pop-header {
+        padding: 12px 34px 12px 14px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .pop-header-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .pop-title {
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1.25;
+      }
+
+      .pop-type {
+        font-size: 10px;
+        letter-spacing: 0.8px;
+        opacity: 0.9;
+        margin-top: 2px;
+        font-weight: bold;
+      }
+
+      .pop-body {
+        padding: 12px 14px 14px;
+        font-family: Arial, sans-serif;
+        color: #1e293b;
+      }
+
+      .pop-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 12.5px;
+        padding: 5px 0;
+        border-bottom: 1px solid #f1f5f9;
+      }
+
+      .pop-row:last-of-type {
+        border-bottom: none;
+      }
+
+      .pop-row .ico {
+        width: 18px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .pop-row .lbl {
+        color: #64748b;
+        min-width: 56px;
+        flex-shrink: 0;
+      }
+
+      .pop-row .val {
+        font-weight: bold;
+        word-break: break-word;
+      }
+
+      /* vital sign chips (physiological alerts) */
+      .vitals {
+        display: flex;
+        gap: 8px;
+        margin: 4px 0 8px;
+      }
+
+      .vital {
+        flex: 1;
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 10px;
+        padding: 6px 8px;
+        text-align: center;
+      }
+
+      .vital .num {
+        font-size: 16px;
+        font-weight: bold;
+        color: #0369a1;
+      }
+
+      .vital .unit {
+        font-size: 10px;
+        color: #64748b;
+      }
+
+      .pop-status {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .pop-status.unack { background: #fee2e2; color: #dc2626; }
+      .pop-status.ack { background: #dcfce7; color: #16a34a; }
+
+      .pop-directions {
+        display: block;
+        margin-top: 10px;
+        text-align: center;
+        background: #1e293b;
+        color: white !important;
+        text-decoration: none;
+        padding: 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: bold;
+      }
     </style>
   </head>
 
@@ -348,157 +583,65 @@
     <div class="wearer-badge" id="wearerBadge"></div>
 
     <!-- Date filter -->
-    <button
-      class="date-toggle-btn"
-      id="dateToggleBtn"
-      onclick="toggleDatePanel()"
-    >
+    <button class="date-toggle-btn" id="dateToggleBtn" onclick="toggleDatePanel()">
       📅 <span id="dateToggleLabel">All Time</span>
     </button>
 
-    <div
-      class="backdrop"
-      id="backdrop"
-      onclick="closeDatePanel()"
-    ></div>
+    <div class="backdrop" id="backdrop" onclick="closeDatePanel()"></div>
 
     <div class="date-panel" id="datePanel">
       <div class="date-panel-header">
-        <span class="date-panel-title">
-          Filter by Date
-        </span>
-
-        <button
-          class="close-panel-btn"
-          onclick="closeDatePanel()"
-        >
-          ✕
-        </button>
+        <span class="date-panel-title">Filter by Date</span>
+        <button class="close-panel-btn" onclick="closeDatePanel()">✕</button>
       </div>
 
       <div class="quick-range-row">
-        <button
-          class="quick-btn active"
-          data-range="all"
-          onclick="setQuickRange('all')"
-        >
-          All Time
-        </button>
-
-        <button
-          class="quick-btn"
-          data-range="today"
-          onclick="setQuickRange('today')"
-        >
-          Today
-        </button>
-
-        <button
-          class="quick-btn"
-          data-range="7"
-          onclick="setQuickRange('7')"
-        >
-          Last 7 Days
-        </button>
-
-        <button
-          class="quick-btn"
-          data-range="30"
-          onclick="setQuickRange('30')"
-        >
-          Last 30 Days
-        </button>
+        <button class="quick-btn active" data-range="all" onclick="setQuickRange('all')">All Time</button>
+        <button class="quick-btn" data-range="today" onclick="setQuickRange('today')">Today</button>
+        <button class="quick-btn" data-range="7" onclick="setQuickRange('7')">Last 7 Days</button>
+        <button class="quick-btn" data-range="30" onclick="setQuickRange('30')">Last 30 Days</button>
       </div>
 
       <div class="date-range-row">
         <div class="field">
           <label>From</label>
-
-          <input
-            type="date"
-            id="dateFrom"
-            onchange="onCustomDateChange()"
-          />
+          <input type="date" id="dateFrom" onchange="onCustomDateChange()" />
         </div>
 
         <div class="field">
           <label>To</label>
-
-          <input
-            type="date"
-            id="dateTo"
-            onchange="onCustomDateChange()"
-          />
+          <input type="date" id="dateTo" onchange="onCustomDateChange()" />
         </div>
       </div>
 
-      <button
-        class="clear-dates-btn"
-        onclick="clearDates()"
-      >
-        Clear dates
-      </button>
+      <button class="clear-dates-btn" onclick="clearDates()">Clear dates</button>
 
-      <div
-        class="date-summary"
-        id="dateSummary"
-      >
-        Showing all dates
-      </div>
+      <div class="date-summary" id="dateSummary">Showing all dates</div>
     </div>
 
     <!-- No results -->
-    <div
-      class="empty-notice"
-      id="emptyNotice"
-    >
-      No alerts match this filter
-    </div>
+    <div class="empty-notice" id="emptyNotice">No alerts match this filter</div>
 
     <!-- Bottom type filters -->
     <div class="filter-bar">
-      <button
-        class="filter-btn btn-all active"
-        onclick="setTypeFilter('all')"
-      >
-        All
-        <span
-          class="filter-count"
-          id="count-all"
-        ></span>
+      <button class="filter-btn btn-all active" onclick="setTypeFilter('all')">
+        All <span class="filter-count" id="count-all"></span>
       </button>
 
-      <button
-        class="filter-btn btn-seizure"
-        onclick="setTypeFilter('seizure')"
-      >
-        🟣 Seizure
-        <span
-          class="filter-count"
-          id="count-seizure"
-        ></span>
+      <button class="filter-btn btn-seizure" onclick="setTypeFilter('seizure')">
+        ⚡ Seizure <span class="filter-count" id="count-seizure"></span>
       </button>
 
-      <button
-        class="filter-btn btn-fall"
-        onclick="setTypeFilter('fall')"
-      >
-        🟠 Fall
-        <span
-          class="filter-count"
-          id="count-fall"
-        ></span>
+      <button class="filter-btn btn-fall" onclick="setTypeFilter('fall')">
+        🧍 Fall <span class="filter-count" id="count-fall"></span>
       </button>
 
-      <button
-        class="filter-btn btn-panic"
-        onclick="setTypeFilter('panic')"
-      >
-        🔴 Panic
-        <span
-          class="filter-count"
-          id="count-panic"
-        ></span>
+      <button class="filter-btn btn-panic" onclick="setTypeFilter('panic')">
+        🚨 Panic <span class="filter-count" id="count-panic"></span>
+      </button>
+
+      <button class="filter-btn btn-physiological" onclick="setTypeFilter('physiological')">
+        ❤️ Physiological <span class="filter-count" id="count-physiological"></span>
       </button>
     </div>
 
@@ -508,98 +651,140 @@
       // ============================================================
 
       const firebaseConfig = {
-        apiKey:
-          "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
-        authDomain:
-          "capstone-2fedw8.firebaseapp.com",
-        projectId:
-          "capstone-2fedw8",
+        apiKey: "AIzaSyCfhXtIo7JahGIZ2OQ-t_CUs3ou9xMoxsk",
+        authDomain: "capstone-2fedw8.firebaseapp.com",
+        projectId: "capstone-2fedw8",
       };
 
       firebase.initializeApp(firebaseConfig);
 
-      const db =
-        firebase.firestore();
+      const db = firebase.firestore();
+
+      // ============================================================
+      // ALERT TYPES
+      // Add new alert types here only (color, icon, label, filter button)
+      // ============================================================
+
+      const TYPE_CONFIG = {
+        seizure: { color: "#a855f7", icon: "⚡", label: "SEIZURE" },
+        fall: { color: "#f97316", icon: "🧍", label: "FALL" },
+        panic: { color: "#ef4444", icon: "🚨", label: "PANIC" },
+        physiological: { color: "#0ea5e9", icon: "❤️", label: "PHYSIOLOGICAL" },
+      };
+
+      const DEFAULT_TYPE = { color: "#6b7280", icon: "📍", label: "ALERT" };
+
+      // Different spellings in Firestore are treated as the same type.
+      // Example: "vitals", "heart_rate", "spo2" all count as "physiological".
+      const TYPE_ALIASES = {
+        physiological: "physiological",
+        physiologic: "physiological",
+        vitals: "physiological",
+        vital: "physiological",
+        heart_rate: "physiological",
+        heartrate: "physiological",
+        spo2: "physiological",
+        hr: "physiological",
+      };
+
+      function normalizeType(raw) {
+        const t = (raw || "").toString().toLowerCase().trim();
+        return TYPE_ALIASES[t] || t;
+      }
+
+      function getTypeConfig(raw) {
+        return TYPE_CONFIG[normalizeType(raw)] || DEFAULT_TYPE;
+      }
+
+      function esc(value) {
+        return String(value === undefined || value === null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
 
       // ============================================================
       // MAP
-      // No + / - zoom buttons
-      // Touch pinch zoom still works
+      // No + / - zoom buttons, touch pinch zoom still works
       // ============================================================
 
-      const map = L.map(
-        "map",
-        {
-          zoomControl: false,
+      const map = L.map("map", {
+        zoomControl: false,
+      }).setView([14.7948, 120.9252], 14);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap",
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Cluster bubbles turn red if any alert inside still needs attention
+      const markerCluster = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 50,
+        iconCreateFunction: function (cluster) {
+          const children = cluster.getAllChildMarkers();
+
+          const hasUnack = children.some(function (m) {
+            return m.options.isUnack;
+          });
+
+          return L.divIcon({
+            html:
+              '<div class="cluster-bubble' +
+              (hasUnack ? " has-unack" : "") +
+              '">' +
+              cluster.getChildCount() +
+              "</div>",
+            className: "",
+            iconSize: [42, 42],
+          });
         },
-      ).setView(
-        [14.7948, 120.9252],
-        14,
-      );
+      });
 
-      L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          attribution: "© OpenStreetMap",
-          maxZoom: 19,
-        },
-      ).addTo(map);
-
-      const markerCluster =
-        L.markerClusterGroup();
-
-      map.addLayer(
-        markerCluster,
-      );
+      map.addLayer(markerCluster);
 
       let allAlerts = [];
-
-      let currentTypeFilter =
-        "all";
-
-      let currentQuickRange =
-        "all";
-
+      let currentTypeFilter = "all";
+      let currentQuickRange = "all";
       let customFrom = null;
-
       let customTo = null;
-
-      let hasFittedOnce =
-        false;
+      let hasFittedOnce = false;
 
       // ============================================================
-      // ICON
+      // PIN ICON
       // ============================================================
 
-      function getIcon(type) {
-        const colors = {
-          seizure: "#a855f7",
-          fall: "#f97316",
-          panic: "#ef4444",
-        };
+      function getIcon(type, isUnack) {
+        const cfg = getTypeConfig(type);
 
-        const color =
-          colors[
-            (type || "")
-              .toLowerCase()
-          ] || "#6b7280";
+        const pulse = isUnack
+          ? '<div class="pin-pulse" style="--pulse-color:' +
+            cfg.color +
+            '88"></div>'
+          : "";
+
+        const check = isUnack ? "" : '<div class="pin-check">✓</div>';
 
         return L.divIcon({
           className: "",
-          html: `
-            <div style="
-              width:30px;
-              height:30px;
-              background:${color};
-              border-radius:50% 50% 50% 0;
-              transform:rotate(-45deg);
-              border:3px solid white;
-              box-shadow:0 2px 8px rgba(0,0,0,0.35);
-            "></div>
-          `,
-          iconSize: [30, 30],
-          iconAnchor: [15, 30],
-          popupAnchor: [0, -32],
+          html:
+            '<div class="pin-wrap ' +
+            (isUnack ? "unack" : "acked") +
+            '">' +
+            pulse +
+            '<div class="pin-shadow"></div>' +
+            '<div class="pin-body" style="background:' +
+            cfg.color +
+            ';">' +
+            '<span class="pin-icon">' +
+            cfg.icon +
+            "</span></div>" +
+            check +
+            "</div>",
+          iconSize: [38, 46],
+          iconAnchor: [19, 42],
+          popupAnchor: [0, -42],
         });
       }
 
@@ -608,125 +793,80 @@
       // ============================================================
 
       function toJsDate(alert) {
-        if (
-          !alert.timestamp ||
-          !alert.timestamp.seconds
-        ) {
+        if (!alert.timestamp || !alert.timestamp.seconds) {
           return null;
         }
 
-        return new Date(
-          alert.timestamp.seconds *
-            1000,
-        );
+        return new Date(alert.timestamp.seconds * 1000);
       }
 
       function startOfDay(d) {
-        const x =
-          new Date(d);
-
-        x.setHours(
-          0,
-          0,
-          0,
-          0,
-        );
-
+        const x = new Date(d);
+        x.setHours(0, 0, 0, 0);
         return x;
       }
 
       function endOfDay(d) {
-        const x =
-          new Date(d);
-
-        x.setHours(
-          23,
-          59,
-          59,
-          999,
-        );
-
+        const x = new Date(d);
+        x.setHours(23, 59, 59, 999);
         return x;
       }
 
       function formatDateShort(d) {
-        return d.toLocaleDateString(
-          "en-PH",
-          {
-            timeZone:
-              "Asia/Manila",
-            month:
-              "short",
-            day:
-              "numeric",
-            year:
-              "numeric",
-          },
-        );
+        return d.toLocaleDateString("en-PH", {
+          timeZone: "Asia/Manila",
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
       }
 
       function getActiveDateRange() {
-        if (
-          customFrom ||
-          customTo
-        ) {
-          return [
-            customFrom,
-            customTo,
-          ];
+        if (customFrom || customTo) {
+          return [customFrom, customTo];
         }
 
-        const now =
-          new Date();
+        const now = new Date();
 
-        if (
-          currentQuickRange ===
-          "today"
-        ) {
-          return [
-            startOfDay(now),
-            endOfDay(now),
-          ];
+        if (currentQuickRange === "today") {
+          return [startOfDay(now), endOfDay(now)];
         }
 
-        if (
-          currentQuickRange ===
-          "7"
-        ) {
-          const from =
-            new Date(now);
-
-          from.setDate(
-            from.getDate() - 6,
-          );
-
-          return [
-            startOfDay(from),
-            endOfDay(now),
-          ];
+        if (currentQuickRange === "7") {
+          const from = new Date(now);
+          from.setDate(from.getDate() - 6);
+          return [startOfDay(from), endOfDay(now)];
         }
 
-        if (
-          currentQuickRange ===
-          "30"
-        ) {
-          const from =
-            new Date(now);
-
-          from.setDate(
-            from.getDate() - 29,
-          );
-
-          return [
-            startOfDay(from),
-            endOfDay(now),
-          ];
+        if (currentQuickRange === "30") {
+          const from = new Date(now);
+          from.setDate(from.getDate() - 29);
+          return [startOfDay(from), endOfDay(now)];
         }
 
-        return [
-          null,
-          null,
-        ];
+        return [null, null];
+      }
+
+      function passesDateFilter(a, from, to) {
+        if (!from && !to) {
+          return true;
+        }
+
+        const d = toJsDate(a);
+
+        if (!d) {
+          return false;
+        }
+
+        if (from && d < from) {
+          return false;
+        }
+
+        if (to && d > to) {
+          return false;
+        }
+
+        return true;
       }
 
       // ============================================================
@@ -734,49 +874,127 @@
       // ============================================================
 
       function getFilteredAlerts() {
-        const [from, to] =
-          getActiveDateRange();
+        const [from, to] = getActiveDateRange();
 
-        return allAlerts.filter(
-          (a) => {
-            if (
-              currentTypeFilter !==
-                "all" &&
-              (a.type || "")
-                .toLowerCase() !==
-                currentTypeFilter
-            ) {
-              return false;
-            }
+        return allAlerts.filter(function (a) {
+          if (
+            currentTypeFilter !== "all" &&
+            normalizeType(a.type) !== currentTypeFilter
+          ) {
+            return false;
+          }
 
-            if (
-              from ||
-              to
-            ) {
-              const d =
-                toJsDate(a);
+          return passesDateFilter(a, from, to);
+        });
+      }
 
-              if (!d) {
-                return false;
-              }
+      // ============================================================
+      // POPUP
+      // ============================================================
 
-              if (
-                from &&
-                d < from
-              ) {
-                return false;
-              }
+      function buildPopup(a) {
+        const cfg = getTypeConfig(a.type);
+        const isUnack = a.status === "unacknowledged";
+        const isPhysio = normalizeType(a.type) === "physiological";
 
-              if (
-                to &&
-                d > to
-              ) {
-                return false;
-              }
-            }
+        const d = toJsDate(a);
 
-            return true;
-          },
+        const dateStr = d ? formatDateShort(d) : "N/A";
+
+        const timeStr = d
+          ? d.toLocaleTimeString("en-PH", {
+              timeZone: "Asia/Manila",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "";
+
+        // Optional vital sign fields. Shown only when present in the alert.
+        const hr =
+          a.heartRate !== undefined
+            ? a.heartRate
+            : a.bpm !== undefined
+              ? a.bpm
+              : null;
+
+        const spo2 =
+          a.spo2 !== undefined
+            ? a.spo2
+            : a.spO2 !== undefined
+              ? a.spO2
+              : null;
+
+        let vitalsHtml = "";
+
+        if (isPhysio && (hr !== null || spo2 !== null)) {
+          vitalsHtml = '<div class="vitals">';
+
+          if (hr !== null) {
+            vitalsHtml +=
+              '<div class="vital"><div class="num">' +
+              esc(hr) +
+              '</div><div class="unit">❤️ BPM</div></div>';
+          }
+
+          if (spo2 !== null) {
+            vitalsHtml +=
+              '<div class="vital"><div class="num">' +
+              esc(spo2) +
+              '</div><div class="unit">🫁 SpO₂ %</div></div>';
+          }
+
+          vitalsHtml += "</div>";
+        }
+
+        const detail = a.message || a.description || a.details || "";
+
+        const detailHtml = detail
+          ? '<div class="pop-row"><span class="ico">📝</span><span class="lbl">Details</span><span class="val">' +
+            esc(detail) +
+            "</span></div>"
+          : "";
+
+        const directions =
+          '<a class="pop-directions" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=' +
+          esc(a.latitude) +
+          "," +
+          esc(a.longitude) +
+          '">🧭 Get Directions</a>';
+
+        return (
+          '<div class="pop-header" style="background:' +
+          cfg.color +
+          ';">' +
+          '<div class="pop-header-icon">' +
+          cfg.icon +
+          "</div>" +
+          "<div>" +
+          '<div class="pop-title">' +
+          esc(a.title || "Alert") +
+          "</div>" +
+          '<div class="pop-type">' +
+          esc(cfg.label) +
+          "</div>" +
+          "</div></div>" +
+          '<div class="pop-body">' +
+          vitalsHtml +
+          '<div class="pop-row"><span class="ico">👤</span><span class="lbl">Wearer</span><span class="val">' +
+          esc(a.wearerName || a.wearerId || "Unknown") +
+          "</span></div>" +
+          '<div class="pop-row"><span class="ico">📅</span><span class="lbl">Date</span><span class="val">' +
+          esc(dateStr) +
+          "</span></div>" +
+          '<div class="pop-row"><span class="ico">🕐</span><span class="lbl">Time</span><span class="val">' +
+          esc(timeStr || "N/A") +
+          "</span></div>" +
+          detailHtml +
+          '<span class="pop-status ' +
+          (isUnack ? "unack" : "ack") +
+          '">' +
+          (isUnack ? "🔴 Needs Attention" : "✅ Acknowledged") +
+          "</span>" +
+          directions +
+          "</div>"
         );
       }
 
@@ -784,262 +1002,94 @@
       // RENDER
       // ============================================================
 
-      function renderMarkers(
-        fitView,
-      ) {
+      function renderMarkers(fitView) {
         markerCluster.clearLayers();
 
-        const filtered =
-          getFilteredAlerts();
+        const filtered = getFilteredAlerts();
 
-        const unack =
-          filtered.filter(
-            (a) =>
-              a.status ===
-              "unacknowledged",
-          ).length;
+        const unack = filtered.filter(function (a) {
+          return a.status === "unacknowledged";
+        }).length;
 
-        document.getElementById(
-          "alertBadge",
-        ).textContent =
-          unack > 0
-            ? `🔴 ${unack} Unacknowledged`
-            : `✅ All Acknowledged`;
+        const badge = document.getElementById("alertBadge");
 
-        const [from, to] =
-          getActiveDateRange();
+        badge.textContent =
+          unack > 0 ? "🔴 " + unack + " Unacknowledged" : "✅ All Acknowledged";
 
-        const dateOnly =
-          allAlerts.filter(
-            (a) => {
-              if (
-                !from &&
-                !to
-              ) {
-                return true;
-              }
+        badge.classList.toggle("ok", unack === 0);
 
-              const d =
-                toJsDate(a);
+        // Counts shown on filter buttons follow the date filter only
+        const [from, to] = getActiveDateRange();
 
-              if (!d) {
-                return false;
-              }
+        const dateOnly = allAlerts.filter(function (a) {
+          return passesDateFilter(a, from, to);
+        });
 
-              if (
-                from &&
-                d < from
-              ) {
-                return false;
-              }
+        const counts = { all: dateOnly.length };
 
-              if (
-                to &&
-                d > to
-              ) {
-                return false;
-              }
+        Object.keys(TYPE_CONFIG).forEach(function (k) {
+          counts[k] = 0;
+        });
 
-              return true;
-            },
-          );
+        dateOnly.forEach(function (a) {
+          const t = normalizeType(a.type);
 
-        const counts = {
-          all:
-            dateOnly.length,
-          seizure: 0,
-          fall: 0,
-          panic: 0,
-        };
+          if (counts[t] !== undefined) {
+            counts[t]++;
+          }
+        });
 
-        dateOnly.forEach(
-          (a) => {
-            const t =
-              (a.type || "")
-                .toLowerCase();
+        Object.keys(counts).forEach(function (k) {
+          const el = document.getElementById("count-" + k);
 
-            if (
-              counts[t] !==
-              undefined
-            ) {
-              counts[t]++;
-            }
-          },
-        );
+          if (el) {
+            el.textContent = " (" + counts[k] + ")";
+          }
+        });
 
-        Object.keys(
-          counts,
-        ).forEach(
-          (k) => {
-            const el =
-              document.getElementById(
-                "count-" + k,
-              );
+        // Newest first
+        filtered.sort(function (a, b) {
+          const da = toJsDate(a);
+          const db2 = toJsDate(b);
 
-            if (el) {
-              el.textContent =
-                ` (${counts[k]})`;
-            }
-          },
-        );
+          if (!da || !db2) {
+            return 0;
+          }
 
-        filtered.sort(
-          (a, b) => {
-            const da =
-              toJsDate(a);
+          return db2 - da;
+        });
 
-            const db =
-              toJsDate(b);
+        filtered.forEach(function (a) {
+          if (!a.latitude || !a.longitude) {
+            return;
+          }
 
-            if (
-              !da ||
-              !db
-            ) {
-              return 0;
-            }
+          const isUnack = a.status === "unacknowledged";
 
-            return db - da;
-          },
-        );
+          const marker = L.marker([a.latitude, a.longitude], {
+            icon: getIcon(a.type, isUnack),
+            isUnack: isUnack,
+            // unacknowledged pins always render above acknowledged ones
+            zIndexOffset: isUnack ? 1000 : 0,
+          });
 
-        filtered.forEach(
-          function (a) {
-            if (
-              !a.latitude ||
-              !a.longitude
-            ) {
-              return;
-            }
+          marker.bindPopup(buildPopup(a), {
+            maxWidth: 260,
+            minWidth: 250,
+            autoPanPadding: [20, 80],
+          });
 
-            const marker =
-              L.marker(
-                [
-                  a.latitude,
-                  a.longitude,
-                ],
-                {
-                  icon:
-                    getIcon(
-                      a.type,
-                    ),
-                },
-              );
+          markerCluster.addLayer(marker);
+        });
 
-            const isUnack =
-              a.status ===
-              "unacknowledged";
+        document.getElementById("emptyNotice").style.display =
+          filtered.length === 0 ? "block" : "none";
 
-            const d =
-              toJsDate(a);
-
-            const dateStr =
-              d
-                ? formatDateShort(
-                    d,
-                  )
-                : "N/A";
-
-            const timeStr =
-              d
-                ? d.toLocaleTimeString(
-                    "en-PH",
-                    {
-                      timeZone:
-                        "Asia/Manila",
-                      hour:
-                        "2-digit",
-                      minute:
-                        "2-digit",
-                    },
-                  )
-                : "";
-
-            marker.bindPopup(`
-              <div style="
-                font-family:Arial;
-                font-size:14px;
-                line-height:2;
-                min-width:200px;
-              ">
-                <b style="font-size:15px;">
-                  ${a.title || "Alert"}
-                </b>
-                <br>
-
-                <span>
-                  📌 Type:
-                  <b>
-                    ${(a.type || "").toUpperCase()}
-                  </b>
-                </span>
-                <br>
-
-                <span>
-                  👤 Wearer:
-                  ${a.wearerId || "Unknown"}
-                </span>
-                <br>
-
-                <span>
-                  📅 ${dateStr}
-                  &nbsp;
-                  🕐 ${timeStr}
-                </span>
-                <br><br>
-
-                <span style="
-                  display:inline-block;
-                  background:${
-                    isUnack
-                      ? "#fee2e2"
-                      : "#dcfce7"
-                  };
-                  color:${
-                    isUnack
-                      ? "#dc2626"
-                      : "#16a34a"
-                  };
-                  padding:3px 10px;
-                  border-radius:12px;
-                  font-size:12px;
-                  font-weight:bold;
-                ">
-                  ${
-                    isUnack
-                      ? "🔴 Needs Attention"
-                      : "✅ Acknowledged"
-                  }
-                </span>
-              </div>
-            `);
-
-            markerCluster.addLayer(
-              marker,
-            );
-          },
-        );
-
-        document.getElementById(
-          "emptyNotice",
-        ).style.display =
-          filtered.length === 0
-            ? "block"
-            : "none";
-
-        if (
-          fitView &&
-          markerCluster
-            .getLayers()
-            .length >
-            0
-        ) {
-          map.fitBounds(
-            markerCluster.getBounds(),
-            {
-              padding:
-                [70, 90],
-            },
-          );
+        if (fitView && markerCluster.getLayers().length > 0) {
+          map.fitBounds(markerCluster.getBounds(), {
+            padding: [70, 90],
+            maxZoom: 17,
+          });
         }
       }
 
@@ -1048,82 +1098,30 @@
       // ============================================================
 
       function updateDateSummary() {
-        const [from, to] =
-          getActiveDateRange();
+        const [from, to] = getActiveDateRange();
 
-        const summaryEl =
-          document.getElementById(
-            "dateSummary",
-          );
+        const summaryEl = document.getElementById("dateSummary");
+        const toggleLabel = document.getElementById("dateToggleLabel");
+        const toggleBtn = document.getElementById("dateToggleBtn");
 
-        const toggleLabel =
-          document.getElementById(
-            "dateToggleLabel",
-          );
+        let text = "Showing all dates";
+        let short = "All Time";
 
-        const toggleBtn =
-          document.getElementById(
-            "dateToggleBtn",
-          );
-
-        let text =
-          "Showing all dates";
-
-        let short =
-          "All Time";
-
-        if (
-          from &&
-          to
-        ) {
-          text =
-            `Showing ${formatDateShort(
-              from,
-            )} – ${formatDateShort(
-              to,
-            )}`;
-
-          short =
-            `${formatDateShort(
-              from,
-            )} – ${formatDateShort(
-              to,
-            )}`;
+        if (from && to) {
+          text = "Showing " + formatDateShort(from) + " – " + formatDateShort(to);
+          short = formatDateShort(from) + " – " + formatDateShort(to);
         } else if (from) {
-          text =
-            `Showing from ${formatDateShort(
-              from,
-            )}`;
-
-          short =
-            `From ${formatDateShort(
-              from,
-            )}`;
+          text = "Showing from " + formatDateShort(from);
+          short = "From " + formatDateShort(from);
         } else if (to) {
-          text =
-            `Showing up to ${formatDateShort(
-              to,
-            )}`;
-
-          short =
-            `Up to ${formatDateShort(
-              to,
-            )}`;
+          text = "Showing up to " + formatDateShort(to);
+          short = "Up to " + formatDateShort(to);
         }
 
-        summaryEl.textContent =
-          text;
+        summaryEl.textContent = text;
+        toggleLabel.textContent = short;
 
-        toggleLabel.textContent =
-          short;
-
-        toggleBtn.classList.toggle(
-          "has-filter",
-          !(
-            !from &&
-            !to
-          ),
-        );
+        toggleBtn.classList.toggle("has-filter", !(!from && !to));
       }
 
       // ============================================================
@@ -1131,16 +1129,9 @@
       // ============================================================
 
       function toggleDatePanel() {
-        const panel =
-          document.getElementById(
-            "datePanel",
-          );
+        const panel = document.getElementById("datePanel");
 
-        if (
-          panel.classList.contains(
-            "open",
-          )
-        ) {
+        if (panel.classList.contains("open")) {
           closeDatePanel();
         } else {
           openDatePanel();
@@ -1148,135 +1139,55 @@
       }
 
       function openDatePanel() {
-        document
-          .getElementById(
-            "datePanel",
-          )
-          .classList.add(
-            "open",
-          );
-
-        document
-          .getElementById(
-            "backdrop",
-          )
-          .classList.add(
-            "open",
-          );
+        document.getElementById("datePanel").classList.add("open");
+        document.getElementById("backdrop").classList.add("open");
       }
 
       function closeDatePanel() {
-        document
-          .getElementById(
-            "datePanel",
-          )
-          .classList.remove(
-            "open",
-          );
-
-        document
-          .getElementById(
-            "backdrop",
-          )
-          .classList.remove(
-            "open",
-          );
+        document.getElementById("datePanel").classList.remove("open");
+        document.getElementById("backdrop").classList.remove("open");
       }
 
       // ============================================================
       // TYPE FILTER
       // ============================================================
 
-      function setTypeFilter(
-        type,
-      ) {
-        currentTypeFilter =
-          type;
+      function setTypeFilter(type) {
+        currentTypeFilter = type;
 
-        document
-          .querySelectorAll(
-            ".filter-btn",
-          )
-          .forEach(
-            (b) =>
-              b.classList.remove(
-                "active",
-              ),
-          );
+        document.querySelectorAll(".filter-btn").forEach(function (b) {
+          b.classList.remove("active");
+        });
 
-        const map2 = {
-          all:
-            "btn-all",
-          seizure:
-            "btn-seizure",
-          fall:
-            "btn-fall",
-          panic:
-            "btn-panic",
-        };
+        document.querySelector(".btn-" + type).classList.add("active");
 
-        document
-          .querySelector(
-            "." +
-              map2[type],
-          )
-          .classList.add(
-            "active",
-          );
-
-        renderMarkers(
-          true,
-        );
+        renderMarkers(true);
       }
 
       // ============================================================
       // QUICK DATE RANGE
       // ============================================================
 
-      function setQuickRange(
-        range,
-      ) {
-        currentQuickRange =
-          range;
+      function setQuickRange(range) {
+        currentQuickRange = range;
 
-        customFrom =
-          null;
+        customFrom = null;
+        customTo = null;
 
-        customTo =
-          null;
+        document.getElementById("dateFrom").value = "";
+        document.getElementById("dateTo").value = "";
 
-        document.getElementById(
-          "dateFrom",
-        ).value = "";
-
-        document.getElementById(
-          "dateTo",
-        ).value = "";
+        document.querySelectorAll(".quick-btn").forEach(function (b) {
+          b.classList.remove("active");
+        });
 
         document
-          .querySelectorAll(
-            ".quick-btn",
-          )
-          .forEach(
-            (b) =>
-              b.classList.remove(
-                "active",
-              ),
-          );
-
-        document
-          .querySelector(
-            `[data-range="${range}"]`,
-          )
-          .classList.add(
-            "active",
-          );
+          .querySelector('[data-range="' + range + '"]')
+          .classList.add("active");
 
         updateDateSummary();
 
-        renderMarkers(
-          true,
-        );
+        renderMarkers(true);
       }
 
       // ============================================================
@@ -1284,218 +1195,99 @@
       // ============================================================
 
       function onCustomDateChange() {
-        const fromVal =
-          document.getElementById(
-            "dateFrom",
-          ).value;
+        const fromVal = document.getElementById("dateFrom").value;
+        const toVal = document.getElementById("dateTo").value;
 
-        const toVal =
-          document.getElementById(
-            "dateTo",
-          ).value;
+        customFrom = fromVal ? startOfDay(new Date(fromVal + "T00:00:00")) : null;
+        customTo = toVal ? endOfDay(new Date(toVal + "T00:00:00")) : null;
 
-        customFrom =
-          fromVal
-            ? startOfDay(
-                new Date(
-                  fromVal +
-                    "T00:00:00",
-                ),
-              )
-            : null;
+        document.querySelectorAll(".quick-btn").forEach(function (b) {
+          b.classList.remove("active");
+        });
 
-        customTo =
-          toVal
-            ? endOfDay(
-                new Date(
-                  toVal +
-                    "T00:00:00",
-                ),
-              )
-            : null;
+        if (!fromVal && !toVal) {
+          currentQuickRange = "all";
 
-        document
-          .querySelectorAll(
-            ".quick-btn",
-          )
-          .forEach(
-            (b) =>
-              b.classList.remove(
-                "active",
-              ),
-          );
-
-        if (
-          !fromVal &&
-          !toVal
-        ) {
-          currentQuickRange =
-            "all";
-
-          document
-            .querySelector(
-              '[data-range="all"]',
-            )
-            .classList.add(
-              "active",
-            );
+          document.querySelector('[data-range="all"]').classList.add("active");
         }
 
         updateDateSummary();
 
-        renderMarkers(
-          true,
-        );
+        renderMarkers(true);
       }
 
       function clearDates() {
-        document.getElementById(
-          "dateFrom",
-        ).value = "";
+        document.getElementById("dateFrom").value = "";
+        document.getElementById("dateTo").value = "";
 
-        document.getElementById(
-          "dateTo",
-        ).value = "";
-
-        setQuickRange(
-          "all",
-        );
+        setQuickRange("all");
       }
 
       // ============================================================
       // URL PARAM
       // ============================================================
 
-      function getQueryParam(
-        name,
-      ) {
-        const params =
-          new URLSearchParams(
-            window.location.search,
-          );
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
 
-        return params.get(
-          name,
-        );
+        return params.get(name);
       }
 
       // ============================================================
       // WEARER BADGE
       // ============================================================
 
-      function setWearerBadge(
-        text,
-        isError,
-      ) {
-        const el =
-          document.getElementById(
-            "wearerBadge",
-          );
+      function setWearerBadge(text, isError) {
+        const el = document.getElementById("wearerBadge");
 
-        el.textContent =
-          text;
+        el.textContent = text;
 
-        el.classList.add(
-          "show",
-        );
+        el.classList.add("show");
 
-        el.classList.toggle(
-          "error",
-          !!isError,
-        );
+        el.classList.toggle("error", !!isError);
       }
 
       // ============================================================
       // FIRESTORE ALERT LISTENER
       // ============================================================
 
-      let alertsUnsubscribe =
-        null;
+      let alertsUnsubscribe = null;
 
-      function listenToAlerts(
-        wearerIds,
-      ) {
-        if (
-          alertsUnsubscribe
-        ) {
+      function listenToAlerts(wearerIds) {
+        if (alertsUnsubscribe) {
           alertsUnsubscribe();
         }
 
-        let query =
-          db.collection(
-            "alerts",
-          );
+        let query = db.collection("alerts");
 
         if (wearerIds) {
-          const idList =
-            Array.isArray(
-              wearerIds,
-            )
-              ? wearerIds
-              : [wearerIds];
+          const idList = Array.isArray(wearerIds) ? wearerIds : [wearerIds];
 
-          if (
-            idList.length ===
-            1
-          ) {
-            query =
-              query.where(
-                "wearerId",
-                "==",
-                idList[0],
-              );
-          } else if (
-            idList.length >
-            1
-          ) {
-            query =
-              query.where(
-                "wearerId",
-                "in",
-                idList.slice(
-                  0,
-                  10,
-                ),
-              );
+          if (idList.length === 1) {
+            query = query.where("wearerId", "==", idList[0]);
+          } else if (idList.length > 1) {
+            query = query.where("wearerId", "in", idList.slice(0, 10));
           }
         }
 
-        alertsUnsubscribe =
-          query.onSnapshot(
-            function (
-              snapshot,
-            ) {
-              allAlerts =
-                [];
+        alertsUnsubscribe = query.onSnapshot(
+          function (snapshot) {
+            allAlerts = [];
 
-              snapshot.forEach(
-                (doc) =>
-                  allAlerts.push(
-                    doc.data(),
-                  ),
-              );
+            snapshot.forEach(function (doc) {
+              allAlerts.push(doc.data());
+            });
 
-              renderMarkers(
-                !hasFittedOnce,
-              );
+            renderMarkers(!hasFittedOnce);
 
-              hasFittedOnce =
-                true;
-            },
-            function (
-              error,
-            ) {
-              console.error(
-                "Alerts listener error:",
-                error,
-              );
+            hasFittedOnce = true;
+          },
+          function (error) {
+            console.error("Alerts listener error:", error);
 
-              setWearerBadge(
-                "⚠️ Could not load alerts",
-                true,
-              );
-            },
-          );
+            setWearerBadge("⚠️ Could not load alerts", true);
+          },
+        );
       }
 
       // ============================================================
@@ -1503,48 +1295,25 @@
       // ============================================================
 
       async function initAlertsForCurrentUser() {
-        const uid =
-          getQueryParam(
-            "uid",
-          );
+        const uid = getQueryParam("uid");
 
         if (!uid) {
-          listenToAlerts(
-            null,
-          );
+          listenToAlerts(null);
 
           return;
         }
 
         try {
-          const connectionsSnap =
-            await db
-              .collection(
-                "caregiver_connections",
-              )
-              .where(
-                "caregiverUid",
-                "==",
-                uid,
-              )
-              .where(
-                "status",
-                "==",
-                "accepted",
-              )
-              .get();
+          const connectionsSnap = await db
+            .collection("caregiver_connections")
+            .where("caregiverUid", "==", uid)
+            .where("status", "==", "accepted")
+            .get();
 
-          if (
-            connectionsSnap.empty
-          ) {
-            setWearerBadge(
-              "⚠️ No accepted wearer connection found",
-              true,
-            );
+          if (connectionsSnap.empty) {
+            setWearerBadge("⚠️ No accepted wearer connection found", true);
 
-            listenToAlerts(
-              null,
-            );
+            listenToAlerts(null);
 
             return;
           }
@@ -1552,107 +1321,53 @@
           const wearerIds = [
             ...new Set(
               connectionsSnap.docs
-                .map(
-                  (d) =>
-                    d.data()
-                      .wearerId,
-                )
-                .filter(
-                  Boolean,
-                ),
+                .map(function (d) {
+                  return d.data().wearerId;
+                })
+                .filter(Boolean),
             ),
           ];
 
-          if (
-            wearerIds.length ===
-            0
-          ) {
-            setWearerBadge(
-              "⚠️ No wearer linked to this account",
-              true,
-            );
+          if (wearerIds.length === 0) {
+            setWearerBadge("⚠️ No wearer linked to this account", true);
 
-            listenToAlerts(
-              null,
-            );
+            listenToAlerts(null);
 
             return;
           }
 
-          let displayNames =
-            wearerIds;
+          let displayNames = wearerIds;
 
           try {
-            const wearersSnap =
-              await db
-                .collection(
-                  "wearers",
-                )
-                .where(
-                  "wearerId",
-                  "in",
-                  wearerIds.slice(
-                    0,
-                    10,
-                  ),
-                )
-                .get();
+            const wearersSnap = await db
+              .collection("wearers")
+              .where("wearerId", "in", wearerIds.slice(0, 10))
+              .get();
 
-            const nameMap =
-              {};
+            const nameMap = {};
 
-            wearersSnap.forEach(
-              (doc) => {
-                const w =
-                  doc.data();
+            wearersSnap.forEach(function (doc) {
+              const w = doc.data();
 
-                nameMap[
-                  w.wearerId
-                ] =
-                  w.wearerName ||
-                  w.wearerId;
-              },
-            );
+              nameMap[w.wearerId] = w.wearerName || w.wearerId;
+            });
 
-            displayNames =
-              wearerIds.map(
-                (id) =>
-                  nameMap[id] ||
-                  id,
-              );
-          } catch (
-            lookupErr
-          ) {
-            console.warn(
-              "Could not look up wearer names:",
-              lookupErr,
-            );
+            displayNames = wearerIds.map(function (id) {
+              return nameMap[id] || id;
+            });
+          } catch (lookupErr) {
+            console.warn("Could not look up wearer names:", lookupErr);
           }
 
-          setWearerBadge(
-            `👤 Connected: ${displayNames.join(
-              ", ",
-            )}`,
-            false,
-          );
+          setWearerBadge("👤 Connected: " + displayNames.join(", "), false);
 
-          listenToAlerts(
-            wearerIds,
-          );
+          listenToAlerts(wearerIds);
         } catch (err) {
-          console.error(
-            "Failed to resolve caregiver → wearer:",
-            err,
-          );
+          console.error("Failed to resolve caregiver → wearer:", err);
 
-          setWearerBadge(
-            "⚠️ Error loading connection",
-            true,
-          );
+          setWearerBadge("⚠️ Error loading connection", true);
 
-          listenToAlerts(
-            null,
-          );
+          listenToAlerts(null);
         }
       }
 
