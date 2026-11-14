@@ -310,23 +310,145 @@
         max-width: 80vw;
       }
 
-      /* CLUSTER BUBBLES */
-      .cluster-bubble {
-        width: 30px;
-        height: 30px;
+      /* PIE-CHART CLUSTER (bago: pumalit sa .cluster-bubble) */
+      .pie-wrap {
+        background: transparent;
+        border: 0;
+      }
+
+      .pie {
+        position: relative;
         border-radius: 50%;
-        background: #1e293b;
-        color: white;
-        border: 2px solid white;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 11px;
+        border: 2px solid white;
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+      }
+
+      .pie .pie-num {
+        background: white;
+        color: #1e293b;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         font-weight: bold;
       }
 
-      .cluster-bubble.has-unack {
-        background: #ef4444;
+      /* maliit na pulang tuldok = may unacknowledged sa loob ng cluster */
+      .pie .udot {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #dc2626;
+        border: 2px solid white;
+      }
+
+      /* BOTTOM SHEET: listahan ng alerts sa isang lugar (bago) */
+      .sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1004;
+        background: white;
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+        max-height: 58vh;
+        display: none;
+        flex-direction: column;
+      }
+
+      .sheet.open {
+        display: flex;
+      }
+
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 13px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+
+      .sheet-close {
+        border: none;
+        background: #f1f5f9;
+        color: #64748b;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+      }
+
+      .sheet-body {
+        overflow-y: auto;
+        padding-bottom: 14px;
+      }
+
+      .sheet-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px 4px;
+        font-size: 11px;
+        font-weight: bold;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: #475569;
+      }
+
+      .sheet-group .dot {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+      }
+
+      .sheet-item {
+        padding: 9px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+      }
+
+      .sheet-item:active {
+        background: #f8fafc;
+      }
+
+      .sheet-item .t {
+        font-size: 13px;
+        font-weight: bold;
+        color: #1e293b;
+      }
+
+      .sheet-item .m {
+        font-size: 11.5px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+
+      .sheet-item .m .s-unack { color: #dc2626; font-weight: bold; }
+      .sheet-item .m .s-ack { color: #16a34a; font-weight: bold; }
+
+      .sheet-more {
+        margin: 10px 16px 0;
+        padding: 9px;
+        text-align: center;
+        background: #f1f5f9;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #334155;
+        cursor: pointer;
       }
 
       /* POPUP CARD */
@@ -509,6 +631,15 @@
     <!-- No results -->
     <div class="empty-notice" id="emptyNotice">No alerts match this filter</div>
 
+    <!-- Bottom sheet: listahan ng alerts sa isang cluster (bago) -->
+    <div class="sheet" id="sheet">
+      <div class="sheet-head">
+        <span id="sheetTitle"></span>
+        <button class="sheet-close" onclick="closeSheet()">✕</button>
+      </div>
+      <div class="sheet-body" id="sheetBody"></div>
+    </div>
+
     <!-- Bottom type filters -->
     <div class="filter-bar">
       <button class="filter-btn btn-all active" onclick="setTypeFilter('all')">
@@ -560,6 +691,21 @@
 
       const DEFAULT_TYPE = { color: "#6b7280", icon: "📍", label: "ALERT" };
 
+      // Pagkakasunod ng kulay sa pie chart at sa listahan (baguhin dito kung gusto mo)
+      const TYPE_ORDER = ["seizure", "fall", "panic", "physiological"];
+
+      // Sa ganitong lapad (metro) o mas maliit, ituturing na iisang lugar:
+      // listahan ang bubukas imbes na mag-zoom.
+      const SAME_SPOT_METERS = 40;
+
+      // Ilang alert kada type ang unang ipapakita sa listahan
+      const SHEET_PAGE_SIZE = 50;
+
+      function typeRank(t) {
+        const i = TYPE_ORDER.indexOf(t);
+        return i === -1 ? 99 : i;
+      }
+
       const TYPE_ALIASES = {
         physiological: "physiological",
         physiologic: "physiological",
@@ -606,38 +752,111 @@
         updateWhenZooming: false,
       }).addTo(map);
 
+      // ------------------------------------------------------------
+      // PIE-CHART CLUSTER ICON
+      // Hinahati ang bilog ayon sa dami ng bawat type, sunod sa TYPE_ORDER.
+      // ------------------------------------------------------------
+
+      function pieClusterIcon(cluster) {
+        const children = cluster.getAllChildMarkers();
+        const total = children.length;
+
+        const counts = {};
+        let hasUnack = false;
+
+        for (let i = 0; i < total; i++) {
+          const o = children[i].options;
+          counts[o.alertType] = (counts[o.alertType] || 0) + 1;
+          if (o.isUnack) hasUnack = true;
+        }
+
+        const types = Object.keys(counts).sort(function (a, b) {
+          return typeRank(a) - typeRank(b);
+        });
+
+        let acc = 0;
+        const stops = types
+          .map(function (t) {
+            const from = (acc / total) * 100;
+            acc += counts[t];
+            const to = (acc / total) * 100;
+            return (
+              getTypeConfig(t).color +
+              " " +
+              from.toFixed(2) +
+              "% " +
+              to.toFixed(2) +
+              "%"
+            );
+          })
+          .join(",");
+
+        // Lumalaki nang kaunti kapag mas marami
+        const size = total < 10 ? 34 : total < 100 ? 42 : total < 500 ? 50 : 58;
+        const inner = Math.round(size * 0.62);
+
+        const html =
+          '<div class="pie" style="width:' +
+          size +
+          "px;height:" +
+          size +
+          "px;background:conic-gradient(" +
+          stops +
+          ');">' +
+          '<span class="pie-num" style="width:' +
+          inner +
+          "px;height:" +
+          inner +
+          "px;font-size:" +
+          (size > 45 ? 13 : 11) +
+          'px;">' +
+          total +
+          "</span>" +
+          (hasUnack ? '<i class="udot"></i>' : "") +
+          "</div>";
+
+        return L.divIcon({
+          html: html,
+          className: "pie-wrap",
+          iconSize: [size, size],
+        });
+      }
+
       const markerCluster = L.markerClusterGroup({
         showCoverageOnHover: false,
         maxClusterRadius: 60,
         chunkedLoading: true,
         animate: false,
         animateAddingMarkers: false,
-        iconCreateFunction: function (cluster) {
-          const children = cluster.getAllChildMarkers();
-
-          let hasUnack = false;
-
-          for (let i = 0; i < children.length; i++) {
-            if (children[i].options.isUnack) {
-              hasUnack = true;
-              break;
-            }
-          }
-
-          return L.divIcon({
-            html:
-              '<div class="cluster-bubble' +
-              (hasUnack ? " has-unack" : "") +
-              '">' +
-              cluster.getChildCount() +
-              "</div>",
-            className: "",
-            iconSize: [30, 30],
-          });
-        },
+        spiderfyOnMaxZoom: false, // inalis ang "bulaklak"
+        zoomToBoundsOnClick: false, // kami ang magdedesisyon (zoom o listahan)
+        iconCreateFunction: pieClusterIcon,
       });
 
       map.addLayer(markerCluster);
+
+      // Click sa cluster: kung may espasyo pa, mag-zoom. Kung iisang lugar na, listahan.
+      markerCluster.on("clusterclick", function (e) {
+        const bounds = e.layer.getBounds();
+        const meters = map.distance(
+          bounds.getSouthWest(),
+          bounds.getNorthEast(),
+        );
+
+        if (meters <= SAME_SPOT_METERS || map.getZoom() >= map.getMaxZoom() - 1) {
+          const list = e.layer.getAllChildMarkers().map(function (m) {
+            return m._alert;
+          });
+
+          openSheet(list);
+        } else {
+          map.fitBounds(bounds, { padding: [50, 50], animate: false });
+        }
+      });
+
+      map.on("click", function () {
+        closeSheet();
+      });
 
       let allAlerts = [];
       let currentTypeFilter = "all";
@@ -656,6 +875,16 @@
         a._ms =
           a.timestamp && a.timestamp.seconds ? a.timestamp.seconds * 1000 : null;
         return a;
+      }
+
+      // Isort ayon sa type (TYPE_ORDER), tapos pinakabago muna
+      function sortAlerts(list) {
+        list.sort(function (x, y) {
+          return (
+            typeRank(x._type) - typeRank(y._type) ||
+            (y._ms || 0) - (x._ms || 0)
+          );
+        });
       }
 
       // ============================================================
@@ -680,6 +909,14 @@
           month: "short",
           day: "numeric",
           year: "numeric",
+        });
+      }
+
+      function formatTime(d) {
+        return d.toLocaleTimeString("en-PH", {
+          timeZone: "Asia/Manila",
+          hour: "2-digit",
+          minute: "2-digit",
         });
       }
 
@@ -721,13 +958,7 @@
 
         const dateStr = d ? formatDateShort(d) : "N/A";
 
-        const timeStr = d
-          ? d.toLocaleTimeString("en-PH", {
-              timeZone: "Asia/Manila",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "";
+        const timeStr = d ? formatTime(d) : "";
 
         const hr =
           a.heartRate !== undefined
@@ -810,6 +1041,104 @@
       }
 
       // ============================================================
+      // BOTTOM SHEET: listahan ng alerts, nakagrupo ayon sa type
+      // ============================================================
+
+      function closeSheet() {
+        document.getElementById("sheet").classList.remove("open");
+      }
+
+      function openSheet(list) {
+        list = list.slice();
+        sortAlerts(list);
+
+        document.getElementById("sheetTitle").textContent =
+          list.length + " alerts in this area";
+
+        const body = document.getElementById("sheetBody");
+        body.innerHTML = "";
+
+        TYPE_ORDER.concat(["__other"]).forEach(function (t) {
+          const items = list.filter(function (a) {
+            return t === "__other"
+              ? TYPE_ORDER.indexOf(a._type) === -1
+              : a._type === t;
+          });
+
+          if (items.length === 0) return;
+
+          const cfg = t === "__other" ? DEFAULT_TYPE : getTypeConfig(t);
+
+          const head = document.createElement("div");
+          head.className = "sheet-group";
+          head.innerHTML =
+            '<span class="dot" style="background:' +
+            cfg.color +
+            '"></span>' +
+            esc(t === "__other" ? "Other" : cfg.label) +
+            " (" +
+            items.length +
+            ")";
+          body.appendChild(head);
+
+          const holder = document.createElement("div");
+          body.appendChild(holder);
+
+          const more = document.createElement("div");
+          more.className = "sheet-more";
+          body.appendChild(more);
+
+          let shown = 0;
+
+          function renderMore() {
+            items.slice(shown, shown + SHEET_PAGE_SIZE).forEach(function (a) {
+              const d = a._ms ? new Date(a._ms) : null;
+
+              const row = document.createElement("div");
+              row.className = "sheet-item";
+              row.innerHTML =
+                '<div class="t">' +
+                esc(a.title || "Alert") +
+                "</div>" +
+                '<div class="m">' +
+                (d ? esc(formatDateShort(d) + " · " + formatTime(d)) : "N/A") +
+                " · " +
+                (a._unack
+                  ? '<span class="s-unack">Needs Attention</span>'
+                  : '<span class="s-ack">Acknowledged</span>') +
+                "</div>";
+
+              // Tap: isara ang listahan at ipakita ang popup ng alert na iyon
+              row.addEventListener("click", function () {
+                closeSheet();
+
+                L.popup({ maxWidth: 260, minWidth: 250, autoPanPadding: [20, 80] })
+                  .setLatLng([a.latitude, a.longitude])
+                  .setContent(buildPopup(a))
+                  .openOn(map);
+              });
+
+              holder.appendChild(row);
+            });
+
+            shown = Math.min(items.length, shown + SHEET_PAGE_SIZE);
+
+            if (shown >= items.length) {
+              more.style.display = "none";
+            } else {
+              more.textContent = "Show more (" + (items.length - shown) + " left)";
+            }
+          }
+
+          more.addEventListener("click", renderMore);
+
+          renderMore();
+        });
+
+        document.getElementById("sheet").classList.add("open");
+      }
+
+      // ============================================================
       // SIMPLE PIN: a plain colored dot
       // Unacknowledged = bigger and solid
       // Acknowledged = smaller and faded
@@ -825,7 +1154,10 @@
           fillColor: cfg.color,
           fillOpacity: a._unack ? 1 : 0.55,
           isUnack: a._unack,
+          alertType: a._type, // para sa pie chart
         });
+
+        marker._alert = a; // para sa listahan
 
         // Popup content is created lazily, only when opened
         marker.bindPopup(
@@ -863,6 +1195,7 @@
         let unackCount = 0;
         let shownCount = 0;
 
+        // allAlerts ay nakasort na ayon sa type, kaya nakagrupo ang mga layer
         for (let i = 0; i < allAlerts.length; i++) {
           const a = allAlerts[i];
 
@@ -1000,6 +1333,7 @@
       }
 
       function openDatePanel() {
+        closeSheet();
         document.getElementById("datePanel").classList.add("open");
         document.getElementById("backdrop").classList.add("open");
       }
@@ -1015,6 +1349,8 @@
 
       function setTypeFilter(type) {
         currentTypeFilter = type;
+
+        closeSheet();
 
         document.querySelectorAll(".filter-btn").forEach(function (b) {
           b.classList.remove("active");
@@ -1133,9 +1469,16 @@
 
         alertsUnsubscribe = query.onSnapshot(
           function (snapshot) {
-            allAlerts = snapshot.docs.map(function (doc) {
-              return prepareAlert(doc.data());
-            });
+            allAlerts = snapshot.docs
+              .map(function (doc) {
+                return prepareAlert(doc.data());
+              })
+              // Hindi isinasama ang mga minarkahang false alarm
+              .filter(function (a) {
+                return a.status !== "false_alarm";
+              });
+
+            sortAlerts(allAlerts);
 
             scheduleRender(!hasFittedOnce);
 
